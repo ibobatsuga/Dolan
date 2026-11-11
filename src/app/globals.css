@@ -1,26 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --sand: #e6dbc7;
+  --sand-deep: #ddd0b9;
+  --paper: #faf7f0;
+  --cobalt: #062b8a;
+  --cobalt-muted: #3a5aa8;
+  --ledger-bg: #f4f3f1;
+  --ledger-surface: #ffffff;
+  --ledger-ink: #14171f;
+  --ledger-hue: #1d5fbf;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-bricolage), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+}
+
+/* Voucher / Ticket artefact styling from direction sheet */
+.voucher-ticket {
+  position: relative;
+  background: var(--paper);
+}
+
+.voucher-perforated {
+  border-bottom: 4px dotted var(--sand-deep);
+}
+
+.voucher-notch-left,
+.voucher-notch-right {
+  position: relative;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }

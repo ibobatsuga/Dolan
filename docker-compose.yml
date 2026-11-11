@@ -1,0 +1,48 @@
+# Dolan Self-Hosted Infrastructure Stack (PRD Bab 16 & Bab 23)
+# 3 Verified OSS Components: Traccar (GPS + Geofence), OSRM (Routing + ETA), Tesseract OCR (KTP/SIM pre-check)
+# Plus PostgreSQL for transactional anti-double-book & payment ledger
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dolan-postgres
+    environment:
+      POSTGRES_USER: dolan
+      POSTGRES_PASSWORD: dolan_dev_password
+      POSTGRES_DB: dolan_marketplace
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  traccar:
+    image: traccar/traccar:latest
+    container_name: dolan-traccar
+    ports:
+      - "8082:8082"   # Web UI & REST API
+      - "5055:5055"   # OsmAnd / GPS tracker protocol
+    volumes:
+      - traccar_logs:/opt/traccar/logs
+
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:latest
+    container_name: dolan-osrm
+    ports:
+      - "5000:5000"
+    # Mount Java / DIY OSM extract (.osrm) for multi-province road routing:
+    # command: osrm-routed --algorithm mld /data/java-latest.osrm
+    volumes:
+      - ./infra/osrm-data:/data
+
+  tesseract-ocr:
+    image: hertzg/tesseract-server:latest
+    container_name: dolan-tesseract
+    ports:
+      - "8884:8884"
+    environment:
+      # Indonesian language pack (ind.traineddata) verified per PRD Bab 23
+      TESSERACT_LANG: "ind+eng"
+
+volumes:
+  postgres_data:
+  traccar_logs:

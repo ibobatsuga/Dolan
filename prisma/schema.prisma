@@ -1,0 +1,426 @@
+// Dolan Car Rental Marketplace — Multi-Province Production Schema (PostgreSQL + Prisma)
+// Supports PRD v0.3 (DIY Pilot + Multi-Province Expansion Ready: Jateng, Jatim, Bali, etc.)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProvinceStatus {
+  ACTIVE
+  PILOT_READY
+  EXPANSION_PLANNED
+}
+
+enum UserRole {
+  RENTER
+  PARTNER
+  DRIVER
+  ADMIN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum DocumentType {
+  KTP
+  SIM_A
+  PASSPORT
+  SIM_INTERNASIONAL
+}
+
+enum OperationalStatus {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
+  MANUAL_BLOCK
+}
+
+enum RentalMode {
+  LEPAS_KUNCI
+  DENGAN_SOPIR
+}
+
+enum PackageType {
+  UNIT_ONLY
+  WITH_DRIVER
+  FULL_BBM_DRIVER
+}
+
+enum BlockType {
+  BOOKING
+  MANUAL_BLOCK
+  MAINTENANCE
+  POST_6H_BUFFER
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  AWAITING_PARTNER
+  CONFIRMED
+  HANDOVER_READY
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  DISPUTED
+  REPLACED
+}
+
+enum LedgerEntryType {
+  DP
+  SETTLEMENT
+  DEPOSIT_HOLD
+  DEPOSIT_RELEASE
+  REFUND
+  COMMISSION
+  CLAIM
+  PAYOUT
+}
+
+enum HandoverStage {
+  PICKUP
+  RETURN
+}
+
+model Province {
+  id               String         @id @default(cuid())
+  slug             String         @unique // e.g., "jogja", "jawa-tengah", "jawa-timur", "bali"
+  code             String         @unique // e.g., "DIY", "JTG", "JTM", "BAL"
+  name             String         // e.g., "DI Yogyakarta"
+  status           ProvinceStatus @default(EXPANSION_PLANNED)
+  defaultCenterLat Float
+  defaultCenterLng Float
+  timezone         String         @default("Asia/Jakarta")
+  currency         String         @default("IDR")
+  geofencePolygon  Json?          // GeoJSON polygon for Traccar geofence sync
+  seoHeadlineId    String
+  seoHeadlineEn    String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  cityHubs       CityHub[]
+  pickupPoints   PickupPoint[]
+  partners       Partner[]
+  vehicles       Vehicle[]
+  bookings       Booking[]
+  regionConfig   PlatformRegionConfig?
+}
+
+model CityHub {
+  id         String   @id @default(cuid())
+  provinceId String
+  province   Province @relation(fields: [provinceId], references: [id])
+  slug       String   @unique
+  name       String   // e.g., "Kota Yogyakarta", "Sleman", "Kulon Progo (YIA)"
+  isActive   Boolean  @default(true)
+
+  pickupPoints PickupPoint[]
+  partners     Partner[]
+  vehicles     Vehicle[]
+}
+
+model PickupPoint {
+  id                 String   @id @default(cuid())
+  provinceId         String
+  province           Province @relation(fields: [provinceId], references: [id])
+  cityHubId          String
+  cityHub            CityHub  @relation(fields: [cityHubId], references: [id])
+  name               String   // e.g., "Bandara Internasional YIA", "Stasiun Tugu"
+  type               String   // AIRPORT | STATION | CITY_CENTER | HOTEL_ZONE | PARTNER_OFFICE
+  lat                Float
+  lng                Float
+  freeWaitingMinutes Int      @default(30)
+  surchargeZoneCode  String   @default("ZONA_1")
+  isActive           Boolean  @default(true)
+}
+
+model PlatformRegionConfig {
+  id                        String   @id @default(cuid())
+  provinceId                String   @unique
+  province                  Province @relation(fields: [provinceId], references: [id])
+  post6hBufferMinutes       Int      @default(30) // FR-MIT-03 paruh jam pasca 6 jam
+  overtimeGraceMinutes      Int      @default(15)
+  overtimeRatePerHourPct    Int      @default(15) // % of 12h rate or fixed per listing
+  driverMaxWorkHoursPerDay  Int      @default(12)
+  driverMinRestMinutes      Int      @default(480) // 8 hours minimum rest between assignments
+  partnerResponseSlaMinutes Int      @default(20)
+  dpProportionPct           Int      @default(30)
+  platformCommissionPct     Int      @default(10)
+  ocrAutoPassThreshold      Float    @default(0.85) // Below this falls into manual review queue
+  osrmRatePerKm             Int      @default(4500)
+  osrmRatePerMinute         Int      @default(500)
+  policyVersion             String   @default("v0.3-pilot-2026-11")
+  updatedAt                 DateTime @updatedAt
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  name               String
+  phone              String             @unique
+  phoneVerified      Boolean            @default(false)
+  email              String             @unique
+  role               UserRole           @default(RENTER)
+  language           String             @default("id")
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  trustScore         Int                @default(70)
+  createdAt          DateTime           @default(now())
+
+  documents         IdentityDocument[]
+  bookings          Booking[]
+  partnerProfile    Partner?
+  driverProfile     Driver?
+}
+
+model IdentityDocument {
+  id                 String             @id @default(cuid())
+  userId             String
+  user               User               @relation(fields: [userId], references: [id])
+  type               DocumentType
+  encryptedNumber    String             // Encrypted / masked for non-admin
+  expiryDate         DateTime?
+  encryptedFileUrl   String
+  status             VerificationStatus @default(PENDING)
+  rejectionReason    String?
+  verifiedByAdminId  String?
+  verifiedAt         DateTime?
+  supersededById     String?
+  createdAt          DateTime           @default(now())
+
+  ocrResult          OcrResult?
+}
+
+model OcrResult {
+  id                 String           @id @default(cuid())
+  documentId         String           @unique
+  document           IdentityDocument @relation(fields: [documentId], references: [id])
+  extractedName      String?
+  extractedNumber    String?
+  extractedExpiry    String?
+  confidence         Float
+  matchesUserInput   Boolean          @default(false)
+  needsManualReview  Boolean          @default(true)
+  rawEngine          String           @default("tesseract-ind")
+  createdAt          DateTime         @default(now())
+}
+
+model Partner {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
+  provinceId         String
+  province           Province @relation(fields: [provinceId], references: [id])
+  cityHubId          String
+  cityHub            CityHub  @relation(fields: [cityHubId], references: [id])
+  businessName       String
+  picName            String
+  address            String
+  payoutBankMasked   String
+  agreementVersion   String
+  agreementSignedAt  DateTime
+  sanctionLevel      Int      @default(0) // 0=clean, 1=warning, 2=throttled, 3=suspended
+  verified           Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  vehicles  Vehicle[]
+  drivers   Driver[]
+  bookings  Booking[]
+}
+
+model Driver {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  partnerId  String
+  partner    Partner  @relation(fields: [partnerId], references: [id])
+  name       String
+  phone      String
+  isActive   Boolean  @default(true)
+
+  assignments DriverAssignment[]
+  bookings    Booking[]
+}
+
+model Vehicle {
+  id                String            @id @default(cuid())
+  partnerId         String
+  partner           Partner           @relation(fields: [partnerId], references: [id])
+  provinceId        String
+  province          Province          @relation(fields: [provinceId], references: [id])
+  cityHubId         String
+  cityHub           CityHub           @relation(fields: [cityHubId], references: [id])
+  brandModel        String
+  category          String            // CITY_CAR | MPV | EXECUTIVE_MPV | HIACE
+  year              Int
+  transmission      String            // MATIC | MANUAL
+  fuelType          String            // BENSIN | DIESEL | HYBRID
+  seats             Int
+  luggage           Int
+  plateMasked       String
+  photos            String[]
+  operationalStatus OperationalStatus @default(AVAILABLE)
+  gpsDeviceId       String?           // Traccar device unique ID
+  createdAt         DateTime          @default(now())
+
+  ratePlan           ListingRatePlan?
+  availabilityBlocks AvailabilityBlock[]
+  bookings           Booking[]
+  gpsPositions       GpsPosition[]
+}
+
+model ListingRatePlan {
+  id                  String   @id @default(cuid())
+  vehicleId           String   @unique
+  vehicle             Vehicle  @relation(fields: [vehicleId], references: [id])
+  offeredModes        RentalMode[]
+  offeredDurations    Int[]    // Subset of [6, 12, 24] — independent prices!
+  ratesJson           Json     // Matrix: { "6": { "UNIT_ONLY": 210000, ... }, "12": ..., "24": ... }
+  fullBbmTermsJson    Json?    // { wilayah, maxKm, tollIncluded, parkingIncluded, driverMealIncluded, returnFuelRule }
+  freeDeliveryZones   String[]
+  zoneFeesJson        Json
+  overtimePerHour     Int
+  depositAmount       Int
+  termsLepasKunci     String
+  termsDenganSopir    String
+  seasonalRulesJson   Json?
+  version             Int      @default(1)
+  updatedAt           DateTime @updatedAt
+}
+
+model AvailabilityBlock {
+  id          String    @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle   @relation(fields: [vehicleId], references: [id])
+  startAt     DateTime
+  endAt       DateTime
+  blockType   BlockType
+  referenceId String?
+  reason      String?
+  createdAt   DateTime  @default(now())
+
+  @@index([vehicleId, startAt, endAt])
+}
+
+model Booking {
+  id                 String        @id @default(cuid())
+  code               String        @unique
+  provinceId         String
+  province           Province      @relation(fields: [provinceId], references: [id])
+  renterId           String
+  renter             User          @relation(fields: [renterId], references: [id])
+  vehicleId          String
+  vehicle            Vehicle       @relation(fields: [vehicleId], references: [id])
+  partnerId          String
+  partner            Partner       @relation(fields: [partnerId], references: [id])
+  driverId           String?
+  driver             Driver?       @relation(fields: [driverId], references: [id])
+  durationHours      Int           // 6 | 12 | 24
+  startAt            DateTime
+  endAt              DateTime
+  bufferEndAt        DateTime
+  mode               RentalMode
+  packageType        PackageType
+  pickupLocation     String
+  gpsConsentAccepted Boolean       @default(false)
+  priceSnapshotJson  Json          // Immutable snapshot at payment time
+  packageSnapshotJson Json         // Immutable package & fuel boundary snapshot
+  policySnapshotJson Json          // Immutable cancellation & overtime snapshot
+  routeQuoteJson     Json?         // OSRM route distance, ETA & source
+  status             BookingStatus @default(PENDING_PAYMENT)
+  partnerDeadlineAt  DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  ledgerEntries      PaymentLedgerEntry[]
+  checklists         HandoverChecklist[]
+  driverAssignments  DriverAssignment[]
+  claims             ClaimDispute[]
+  geofenceEvents     GeofenceEvent[]
+}
+
+model DriverAssignment {
+  id             String   @id @default(cuid())
+  bookingId      String
+  booking        Booking  @relation(fields: [bookingId], references: [id])
+  driverId       String
+  driver         Driver   @relation(fields: [driverId], references: [id])
+  startAt        DateTime
+  endAt          DateTime
+  minRestMinutes Int      @default(480)
+  status         String   @default("ASSIGNED")
+  createdAt      DateTime @default(now())
+}
+
+model PaymentLedgerEntry {
+  id             String          @id @default(cuid())
+  bookingId      String
+  booking        Booking         @relation(fields: [bookingId], references: [id])
+  type           LedgerEntryType
+  amount         Int
+  gateway        String          // MIDTRANS | XENDIT | PLATFORM_ESCROW
+  gatewayRef     String?
+  idempotencyKey String          @unique
+  reconciled     Boolean         @default(false)
+  reason         String?
+  createdAt      DateTime        @default(now())
+}
+
+model HandoverChecklist {
+  id                String        @id @default(cuid())
+  bookingId         String
+  booking           Booking       @relation(fields: [bookingId], references: [id])
+  stage             HandoverStage
+  photos            String[]
+  fuelLevelPct      Int
+  odometerKm        Int
+  notes             String
+  renterConfirmedAt DateTime?
+  partnerConfirmedAt DateTime?
+  lockedAt          DateTime?
+  createdAt         DateTime      @default(now())
+}
+
+model GpsPosition {
+  id         String   @id @default(cuid())
+  vehicleId  String
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+  bookingId  String?
+  lat        Float
+  lng        Float
+  speedKmh   Float
+  isOnline   Boolean  @default(true)
+  recordedAt DateTime @default(now())
+}
+
+model GeofenceEvent {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  eventType String   // OUT_OF_GEOFENCE | OVERDUE | DEVICE_OFFLINE
+  severity  String   // WARNING | CRITICAL
+  detail    String
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ClaimDispute {
+  id             String   @id @default(cuid())
+  bookingId      String
+  booking        Booking  @relation(fields: [bookingId], references: [id])
+  filedByRole    UserRole
+  category       String   // DAMAGE | OVERTIME | BBM_EXCESS | OUT_OF_ZONE | NO_SHOW
+  claimedAmount  Int
+  approvedAmount Int?
+  evidenceUrls   String[]
+  status         String   @default("OPEN") // OPEN | RESOLVED | APPEALED
+  decisionNote   String?
+  appealUsed     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
