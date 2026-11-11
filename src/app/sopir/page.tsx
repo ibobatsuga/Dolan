@@ -183,8 +183,8 @@ export default function DriverPage() {
                   </div>
                 )}
 
-                {/* Large outdoor touch targets per Bab 17 */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                {/* Large outdoor touch targets — 1 Single Horizontal Strip */}
+                <div className="flex flex-nowrap items-center gap-2 pt-2 overflow-x-auto no-scrollbar">
                   {(
                     [
                       ['EN_ROUTE', 'Berangkat'],
@@ -197,13 +197,13 @@ export default function DriverPage() {
                       key={st}
                       type="button"
                       onClick={() => updateStatus(task.assignment.id, st)}
-                      className={`py-3 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`flex-1 min-w-[115px] py-3 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                         task.assignment.status === st
                           ? 'bg-[#1d5fbf] text-white'
                           : 'bg-[#14171f] text-white hover:bg-[#2a2f3d]'
                       }`}
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                       {label}
                     </button>
                   ))}

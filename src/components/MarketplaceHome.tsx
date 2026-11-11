@@ -306,18 +306,18 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
             </div>
           </div>
 
-          {/* Perforated Voucher Search Bar */}
-          <div className="border-t-4 border-dotted border-[#ddd0b9] bg-[#faf7f0] p-5 sm:p-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+          {/* Perforated Voucher Search Bar — 1 Single Horizontal Line */}
+          <div className="border-t-4 border-dotted border-[#ddd0b9] bg-[#faf7f0] p-5 sm:p-6">
+            <div className="flex flex-nowrap items-end gap-2.5 overflow-x-auto no-scrollbar pb-1">
               {/* Province */}
-              <div className="lg:col-span-2">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5">
+              <div className="min-w-[155px] flex-1 shrink-0">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
                   {lang === 'en' ? 'Province' : 'Provinsi'}
                 </label>
                 <select
                   value={provinceSlug}
                   onChange={(e) => setProvinceSlug(e.target.value)}
-                  className="w-full h-11 px-3 rounded-lg bg-[#e6dbc7]/50 border border-[#062b8a]/25 text-sm font-medium text-[#062b8a]"
+                  className="w-full h-11 px-3 rounded-lg bg-[#e6dbc7]/50 border border-[#062b8a]/25 text-sm font-medium text-[#062b8a] whitespace-nowrap"
                 >
                   <option value="jogja">DI Yogyakarta (Aktif)</option>
                   <option value="jawa-tengah">Jawa Tengah (V2)</option>
@@ -327,14 +327,14 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
               </div>
 
               {/* Pickup Point */}
-              <div className="lg:col-span-3">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5">
+              <div className="min-w-[215px] flex-[1.6] shrink-0">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
                   {lang === 'en' ? 'Pickup Point' : 'Titik Ambil'}
                 </label>
                 <select
                   value={pickupPointId}
                   onChange={(e) => setPickupPointId(e.target.value)}
-                  className="w-full h-11 px-3 rounded-lg bg-[#e6dbc7]/50 border border-[#062b8a]/25 text-sm font-medium text-[#062b8a]"
+                  className="w-full h-11 px-3 rounded-lg bg-[#e6dbc7]/50 border border-[#062b8a]/25 text-sm font-medium text-[#062b8a] whitespace-nowrap"
                 >
                   {(data?.pickupPoints || []).map((pp) => (
                     <option key={pp.id} value={pp.id}>
@@ -344,9 +344,9 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
                 </select>
               </div>
 
-              {/* Date + Flexible Start Time */}
-              <div className="lg:col-span-2">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5">
+              {/* Date */}
+              <div className="min-w-[142px] flex-1 shrink-0">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
                   {lang === 'en' ? 'Start Date' : 'Tanggal Mulai'}
                 </label>
                 <input
@@ -357,8 +357,9 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
                 />
               </div>
 
-              <div className="lg:col-span-1">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5">
+              {/* Time */}
+              <div className="min-w-[104px] w-[110px] shrink-0">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
                   {lang === 'en' ? 'Time' : 'Jam'}
                 </label>
                 <input
@@ -370,8 +371,8 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
               </div>
 
               {/* Duration 6 / 12 / 24 */}
-              <div className="lg:col-span-2">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5">
+              <div className="min-w-[148px] shrink-0">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
                   {lang === 'en' ? 'Duration' : 'Durasi'}
                 </label>
                 <div className="grid grid-cols-3 gap-1 bg-[#e6dbc7]/60 p-1 rounded-lg border border-[#062b8a]/20 h-11">
@@ -380,7 +381,7 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
                       key={dur}
                       type="button"
                       onClick={() => setDurationHours(dur)}
-                      className={`rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                      className={`rounded-md text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap px-2 ${
                         durationHours === dur
                           ? 'bg-[#062b8a] text-[#e6dbc7]'
                           : 'text-[#062b8a] hover:bg-[#ddd0b9]'
@@ -393,8 +394,8 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
               </div>
 
               {/* Mode & Package */}
-              <div className="lg:col-span-2">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5">
+              <div className="min-w-[205px] flex-[1.3] shrink-0">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
                   {lang === 'en' ? 'Mode & Package' : 'Mode & Paket'}
                 </label>
                 <select
@@ -403,7 +404,7 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
                     const [m, p] = e.target.value.split(':') as [RentalMode, PackageType];
                     handleModePackageSelect(m, p);
                   }}
-                  className="w-full h-11 px-3 rounded-lg bg-[#062b8a] text-[#e6dbc7] text-sm font-semibold cursor-pointer"
+                  className="w-full h-11 px-3 rounded-lg bg-[#062b8a] text-[#e6dbc7] text-sm font-semibold cursor-pointer whitespace-nowrap"
                 >
                   <option value="LEPAS_KUNCI:UNIT_ONLY">
                     {lang === 'en' ? 'Self-Drive (Unit Only)' : 'Lepas Kunci (Unit Saja)'}
@@ -418,25 +419,25 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
               </div>
             </div>
 
-            {/* Calculated Finish Time + Pickup Grace Notice */}
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-[#3a5aa8]">
-              <div className="flex flex-wrap items-center gap-4">
-                <span className="inline-flex items-center gap-1.5 font-medium text-[#062b8a]">
-                  <Clock className="w-3.5 h-3.5" />
+            {/* Calculated Finish Time + Pickup Grace Notice — Single Line */}
+            <div className="mt-3.5 flex flex-nowrap items-center justify-between gap-4 overflow-x-auto no-scrollbar whitespace-nowrap text-xs text-[#3a5aa8]">
+              <div className="flex flex-nowrap items-center gap-3 shrink-0">
+                <span className="inline-flex items-center gap-1.5 font-medium text-[#062b8a] shrink-0">
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
                   Selesai otomatis: <strong className="font-mono">{endDisplay} WIB</strong>
                 </span>
                 {durationHours === 6 && (
-                  <span className="inline-flex items-center gap-1 bg-[#e6dbc7] px-2.5 py-0.5 rounded-full text-[#062b8a] font-medium">
+                  <span className="inline-flex items-center gap-1 bg-[#e6dbc7] px-2.5 py-0.5 rounded-full text-[#062b8a] font-medium shrink-0">
                     +30 mnt paruh jam cuci & cek unit otomatis (FR-MIT-03)
                   </span>
                 )}
                 {data?.pickup && (
-                  <span>
+                  <span className="shrink-0">
                     Masa tunggu gratis titik jemput: <strong>{data.pickup.freeWaitingMinutes} menit</strong>
                   </span>
                 )}
               </div>
-              <span className="font-medium">
+              <span className="font-medium shrink-0">
                 {mode === 'LEPAS_KUNCI'
                   ? 'Membutuhkan verifikasi KTP & SIM A + Deposit Escrow'
                   : 'Tanpa SIM penyewa & tanpa deposit lepas kunci'}
@@ -485,7 +486,7 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
       {/* FILTER BAR & RESULTS */}
       {(!activeProvince || activeProvince.status === 'ACTIVE') && (
         <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-14">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
                 {lang === 'en'
@@ -497,14 +498,14 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#3a5aa8] mr-1">
+            <div className="flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap shrink-0">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#3a5aa8] mr-1 shrink-0">
                 <SlidersHorizontal className="w-3.5 h-3.5" /> Filter:
               </span>
               <select
                 value={transmission}
                 onChange={(e) => setTransmission(e.target.value as 'ALL' | 'MATIC' | 'MANUAL')}
-                className="px-3 py-1.5 rounded-lg bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-semibold"
+                className="px-3 py-1.5 rounded-lg bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-semibold shrink-0"
               >
                 <option value="ALL">Semua Transmisi</option>
                 <option value="MATIC">Matic / CVT</option>
@@ -513,14 +514,14 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
               <select
                 value={minSeats}
                 onChange={(e) => setMinSeats(Number(e.target.value))}
-                className="px-3 py-1.5 rounded-lg bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-semibold"
+                className="px-3 py-1.5 rounded-lg bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-semibold shrink-0"
               >
                 <option value={0}>Semua Kursi</option>
                 <option value={5}>5+ Kursi</option>
                 <option value={7}>7+ Kursi (Keluarga)</option>
                 <option value={12}>12 Kursi (Hiace)</option>
               </select>
-              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-semibold cursor-pointer">
+              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-semibold cursor-pointer shrink-0 whitespace-nowrap">
                 <input
                   type="checkbox"
                   checked={freeDeliveryOnly}
@@ -714,7 +715,7 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
                               </span>
                             </div>
                             {item.alternativeOptions.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 pt-1">
+                              <div className="flex flex-nowrap items-center gap-1.5 pt-1 overflow-x-auto no-scrollbar">
                                 {item.alternativeOptions.slice(0, 3).map((alt, idx) => (
                                   <button
                                     key={idx}
@@ -723,7 +724,7 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
                                       setDurationHours(alt.durationHours);
                                       handleModePackageSelect(alt.mode, alt.packageType);
                                     }}
-                                    className="px-2 py-1 rounded bg-[#faf7f0] border border-[#062b8a]/25 text-[11px] font-semibold hover:bg-[#062b8a] hover:text-[#e6dbc7] cursor-pointer"
+                                    className="px-2 py-1 rounded bg-[#faf7f0] border border-[#062b8a]/25 text-[11px] font-semibold hover:bg-[#062b8a] hover:text-[#e6dbc7] cursor-pointer whitespace-nowrap shrink-0"
                                   >
                                     {alt.durationHours}j • {alt.mode === 'LEPAS_KUNCI' ? 'Lepas Kunci' : 'Sopir'} ({formatRp(alt.baseRate)})
                                   </button>
@@ -742,7 +743,7 @@ export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' 
                           setCheckoutError(null);
                           setOcrResult(null);
                         }}
-                        className={`w-full py-3 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
+                        className={`w-full py-3 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap transition-colors ${
                           canBook
                             ? 'bg-[#062b8a] text-[#e6dbc7] hover:bg-[#041f66] cursor-pointer'
                             : 'bg-[#ddd0b9] text-[#3a5aa8] cursor-not-allowed'

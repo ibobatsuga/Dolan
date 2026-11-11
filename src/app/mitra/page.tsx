@@ -320,8 +320,8 @@ export default function PartnerSaasPage() {
           </div>
         )}
 
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap gap-1.5 border-b border-[#e2e0dc] pb-3">
+        {/* Navigation Tabs — 1 Single Line */}
+        <div className="flex flex-nowrap items-center gap-1.5 border-b border-[#e2e0dc] pb-3 overflow-x-auto no-scrollbar">
           {(
             [
               ['calendar', 'Kalender Anti-Double-Book'],
@@ -335,7 +335,7 @@ export default function PartnerSaasPage() {
               key={id}
               type="button"
               onClick={() => setTab(id)}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
                 tab === id
                   ? 'bg-[#14171f] text-white'
                   : 'bg-white border border-[#e2e0dc] text-[#4b505b] hover:bg-[#efede9]'
@@ -517,35 +517,35 @@ export default function PartnerSaasPage() {
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
                       {b.status === 'AWAITING_PARTNER' && (
                         <>
                           <button
                             type="button"
                             onClick={() => handleOrderAction(b.code, 'ACCEPT')}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#14171f] text-white text-xs font-semibold cursor-pointer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#14171f] text-white text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
                           >
-                            <Check className="w-3.5 h-3.5" /> Terima
+                            <Check className="w-3.5 h-3.5 shrink-0" /> Terima
                           </button>
                           <button
                             type="button"
                             onClick={() => handleOrderAction(b.code, 'REJECT')}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-300 text-red-700 text-xs font-semibold cursor-pointer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-300 text-red-700 text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
                           >
-                            <XCircle className="w-3.5 h-3.5" /> Tolak (Unit Rusak)
+                            <XCircle className="w-3.5 h-3.5 shrink-0" /> Tolak (Unit Rusak)
                           </button>
                         </>
                       )}
 
                       {b.mode === 'DENGAN_SOPIR' && (
-                        <div className="flex items-center gap-1.5">
-                          <UserCheck className="w-3.5 h-3.5 text-[#1d5fbf]" />
+                        <div className="flex flex-nowrap items-center gap-1.5 shrink-0">
+                          <UserCheck className="w-3.5 h-3.5 text-[#1d5fbf] shrink-0" />
                           <select
                             value={b.driverId || ''}
                             onChange={(e) => {
                               if (e.target.value) handleAssignDriver(b.code, e.target.value);
                             }}
-                            className="px-2.5 py-1.5 rounded-lg bg-[#f4f3f1] border border-[#d8d5cf] text-xs font-medium"
+                            className="px-2.5 py-1.5 rounded-lg bg-[#f4f3f1] border border-[#d8d5cf] text-xs font-medium whitespace-nowrap shrink-0"
                           >
                             <option value="">Pilih Sopir Bertugas...</option>
                             {(data?.drivers || []).map((d) => (

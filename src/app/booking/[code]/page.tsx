@@ -344,10 +344,10 @@ export default function BookingVoucherPage() {
                   </div>
                 </div>
 
-                {/* Extend & Cancel (FR-REN-07 / FR-REN-13) */}
+                {/* Extend & Cancel (FR-REN-07 / FR-REN-13) — 1 Single Line */}
                 {detail.booking.status !== 'CANCELLED' &&
                   detail.booking.status !== 'COMPLETED' && (
-                    <div className="flex flex-wrap gap-2 pt-1">
+                    <div className="flex flex-nowrap items-center gap-2 pt-1 overflow-x-auto no-scrollbar">
                       {([12, 24] as DurationHours[])
                         .filter((d) => d > detail.booking.durationHours)
                         .map((target) => (
@@ -355,7 +355,7 @@ export default function BookingVoucherPage() {
                             key={target}
                             type="button"
                             onClick={() => handleExtend(target)}
-                            className="px-3.5 py-2 rounded-lg bg-[#062b8a] text-[#e6dbc7] text-xs font-semibold cursor-pointer"
+                            className="px-3.5 py-2 rounded-lg bg-[#062b8a] text-[#e6dbc7] text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
                           >
                             Ajukan Extend ke {target} Jam
                           </button>
@@ -363,7 +363,7 @@ export default function BookingVoucherPage() {
                       <button
                         type="button"
                         onClick={handleCancel}
-                        className="px-3.5 py-2 rounded-lg border border-red-700 text-red-700 text-xs font-semibold hover:bg-red-50 cursor-pointer"
+                        className="px-3.5 py-2 rounded-lg border border-red-700 text-red-700 text-xs font-semibold hover:bg-red-50 cursor-pointer whitespace-nowrap shrink-0"
                       >
                         Batalkan Booking (Hitung Refund)
                       </button>

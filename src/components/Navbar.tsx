@@ -38,9 +38,9 @@ export function Navbar({
           : 'bg-[#e6dbc7]/95 backdrop-blur-sm border-[#062b8a]/15 text-[#062b8a]'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2.5 group">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex flex-nowrap items-center justify-between gap-3 overflow-x-auto no-scrollbar">
+        <div className="flex flex-nowrap items-center gap-3 shrink-0">
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0 whitespace-nowrap">
             <svg
               width="34"
               height="34"
@@ -67,7 +67,7 @@ export function Navbar({
                 fill={isLedger ? '#1d5fbf' : '#e6dbc7'}
               />
             </svg>
-            <div className="leading-none">
+            <div className="leading-none whitespace-nowrap">
               <span className="text-xl font-semibold tracking-tight block">Dolan</span>
               <span
                 className={`text-[11px] font-medium tracking-wide ${
@@ -82,13 +82,13 @@ export function Navbar({
           </Link>
 
           {onProvinceChange && (
-            <div className="hidden lg:flex items-center gap-1.5 pl-3 border-l border-current/15">
-              <MapPin className="w-3.5 h-3.5 opacity-70" />
+            <div className="hidden lg:flex flex-nowrap items-center gap-1.5 pl-3 border-l border-current/15 shrink-0">
+              <MapPin className="w-3.5 h-3.5 opacity-70 shrink-0" />
               <select
                 aria-label="Pilih Provinsi"
                 value={activeProvinceSlug}
                 onChange={(e) => onProvinceChange(e.target.value)}
-                className={`text-xs font-medium rounded-md px-2 py-1 border cursor-pointer focus:outline-none ${
+                className={`text-xs font-medium rounded-md px-2 py-1 border cursor-pointer focus:outline-none whitespace-nowrap shrink-0 ${
                   isLedger
                     ? 'bg-[#f4f3f1] border-[#d8d5cf] text-[#14171f]'
                     : 'bg-[#faf7f0] border-[#062b8a]/20 text-[#062b8a]'
@@ -103,7 +103,7 @@ export function Navbar({
           )}
         </div>
 
-        <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <nav className="flex flex-nowrap items-center gap-1 shrink-0">
           {navLinks.map((item) => {
             const Icon = item.icon;
             const active =
@@ -115,7 +115,7 @@ export function Navbar({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
                   active
                     ? isLedger
                       ? 'bg-[#14171f] text-white'
@@ -125,7 +125,7 @@ export function Navbar({
                       : 'text-[#062b8a] hover:bg-[#ddd0b9]'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span>{item.label}</span>
               </Link>
             );
@@ -136,13 +136,13 @@ export function Navbar({
           <button
             type="button"
             onClick={() => onLangChange(lang === 'id' ? 'en' : 'id')}
-            className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               isLedger
                 ? 'border-[#d8d5cf] hover:bg-[#f4f3f1]'
                 : 'border-[#062b8a]/25 bg-[#faf7f0] hover:bg-[#ddd0b9]'
             }`}
           >
-            <Globe className="w-3.5 h-3.5" />
+            <Globe className="w-3.5 h-3.5 shrink-0" />
             <span>{lang === 'id' ? 'ID / EN' : 'EN / ID'}</span>
           </button>
         )}

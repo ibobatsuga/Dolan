@@ -183,7 +183,7 @@ export default function AdminOpsPage() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-1.5 border-b border-[#e2e0dc] pb-3">
+        <div className="flex flex-nowrap items-center gap-1.5 border-b border-[#e2e0dc] pb-3 overflow-x-auto no-scrollbar">
           {(
             [
               ['provinces', 'Infrastruktur Multi-Provinsi', Globe],
@@ -197,13 +197,13 @@ export default function AdminOpsPage() {
               key={id}
               type="button"
               onClick={() => setTab(id)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0 ${
                 tab === id
                   ? 'bg-[#14171f] text-white'
                   : 'bg-white border border-[#e2e0dc] text-[#4b505b]'
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-3.5 h-3.5 shrink-0" />
               {label}
             </button>
           ))}
