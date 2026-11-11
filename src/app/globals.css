@@ -1,39 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --sand: #e6dbc7;
-  --sand-deep: #ddd0b9;
-  --paper: #faf7f0;
-  --cobalt: #062b8a;
-  --cobalt-muted: #3a5aa8;
-  --ledger-bg: #f4f3f1;
-  --ledger-surface: #ffffff;
-  --ledger-ink: #14171f;
-  --ledger-hue: #1d5fbf;
+  --muvo-bg: #F7F7F8;
+  --muvo-surface: #FFFFFF;
+  --muvo-black: #0D0D0D;
+  --muvo-ink-muted: #6B7280;
+  --muvo-orange: #FF5500;
+  --muvo-orange-hover: #E64D00;
+  --muvo-orange-soft: #FFF2EB;
+  --muvo-border: rgba(13, 13, 13, 0.1);
 }
 
 @theme inline {
-  --font-sans: var(--font-bricolage), system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
-  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+  background-color: var(--muvo-bg);
+  color: var(--muvo-black);
 }
 
-/* Voucher / Ticket artefact styling from direction sheet */
+/* Voucher / Ticket artefact styling in corporate White/Black/Orange */
 .voucher-ticket {
   position: relative;
-  background: var(--paper);
+  background: var(--muvo-surface);
 }
 
 .voucher-perforated {
-  border-bottom: 4px dotted var(--sand-deep);
-}
-
-.voucher-notch-left,
-.voucher-notch-right {
-  position: relative;
+  border-bottom: 3px dashed rgba(13, 13, 13, 0.14);
 }
 
 .tabular-nums {

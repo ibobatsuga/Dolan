@@ -1,1095 +1,1471 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
-  Clock,
-  MapPin,
-  ShieldCheck,
-  Fuel,
-  Navigation,
-  CheckCircle2,
-  AlertTriangle,
-  ScanText,
   ArrowRight,
+  Bot,
+  CarFront,
+  CheckCircle2,
+  Clock,
+  GitCompareArrows,
+  Heart,
+  MapPin,
+  Search,
+  ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
+  Star,
+  TrendingUp,
   X,
 } from 'lucide-react';
-import { Navbar } from './Navbar';
-import { Footer } from './Footer';
+import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import {
+  Booking,
   DurationHours,
-  OcrVerificationResult,
   PackageType,
   PartnerProfile,
-  PickupPoint,
-  PriceBreakdown,
-  Province,
   RentalMode,
-  RouteQuote,
-  VehicleListing,
+  VehicleCategory,
 } from '@/lib/types';
+import {
+  brandFromModel,
+  categoryLabel,
+  formatRp,
+  MarketplaceSearchItem,
+  PartnerMessageThread,
+  SavedSearchItem,
+  SearchApiPayload,
+  SortOption,
+  UserAccount,
+  UserNotificationItem,
+  UserTab,
+} from './user/types';
+import { UserAuthModal } from './user/UserAuthModal';
+import { FilterSheetModal } from './user/FilterSheetModal';
+import { CompareDrawerModal } from './user/CompareDrawerModal';
+import { PartnerProfileModal } from './user/PartnerProfileModal';
+import { VehicleDetailModal } from './user/VehicleDetailModal';
+import { BookingFlowModal } from './user/BookingFlowModal';
+import {
+  BookingsGarageHubView,
+  ProfileHubView,
+  WishlistHubView,
+} from './user/UserHubViews';
 
-interface SearchResultItem {
-  vehicle: VehicleListing;
-  partner: PartnerProfile;
-  hubName: string;
-  routeQuote: RouteQuote;
-  price: PriceBreakdown | null;
-  rateAvailable: boolean;
-  calendarAvailable: boolean;
-  conflictReason?: string;
-  endAt: string;
-  bufferEndAt: string;
-  alternativeOptions: Array<{
-    durationHours: DurationHours;
-    mode: RentalMode;
-    packageType: PackageType;
-    baseRate: number;
-  }>;
+interface MarketplaceHomeProps {
+  initialProvince?: string;
+  initialLang?: 'id' | 'en';
 }
 
-interface SearchApiResponse {
-  province: Province;
-  pickup: PickupPoint;
-  items: SearchResultItem[];
-  provinces: Province[];
-  pickupPoints: PickupPoint[];
+function defaultTomorrowDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
 }
 
-function formatRp(n: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
+const INITIAL_SAVED_SEARCHES: SavedSearchItem[] = [
+  {
+    id: 'ss-1',
+    title: 'City Tour Stasiun Tugu (12 Jam)',
+    summary: 'City Car / MPV • Matic • Lepas Kunci',
+    provinceSlug: 'jogja',
+    mode: 'LEPAS_KUNCI',
+    duration: 12,
+    category: 'CITY_CAR',
+    newMatches: 4,
+    active: true,
+  },
+  {
+    id: 'ss-2',
+    title: 'Penjemputan Bandara YIA + Sopir',
+    summary: 'Executive MPV • Full BBM • Gratis Antar',
+    provinceSlug: 'jogja',
+    mode: 'DENGAN_SOPIR',
+    duration: 12,
+    category: 'EXECUTIVE_MPV',
+    newMatches: 3,
+    active: true,
+  },
+];
 
-export function MarketplaceHome({ initialProvince = 'jogja', initialLang = 'id' }: { initialProvince?: string; initialLang?: 'id' | 'en' }) {
-  const router = useRouter();
+const INITIAL_NOTIFICATIONS: UserNotificationItem[] = [
+  {
+    id: 'n-1',
+    category: 'alert',
+    title: 'Penurunan Tarif di Stasiun Tugu',
+    body: 'Tarif Toyota Avanza paket 12 jam turun Rp 35.000 untuk keberangkatan besok pagi.',
+    time: '10 menit lalu',
+    unread: true,
+  },
+  {
+    id: 'n-2',
+    category: 'booking',
+    title: 'Voucher MVO-DIY-2601 Siap Digunakan',
+    body: 'Mitra siap mengantar unit di Bandara YIA. Jangan lupa cek checklist pickup.',
+    time: '1 jam lalu',
+    unread: true,
+    bookingCode: 'MVO-DIY-2601',
+  },
+  {
+    id: 'n-3',
+    category: 'promo',
+    title: 'Promo Akhir Pekan Jogja',
+    body: 'Gratis antar-jemput zona Malioboro, Prawirotaman, dan Sleman Inti.',
+    time: 'Kemarin',
+    unread: false,
+  },
+];
+
+const INITIAL_MESSAGES: PartnerMessageThread[] = [
+  {
+    id: 'm-1',
+    sender: 'Mataram Rent Car Jogja',
+    role: 'Mitra Rental',
+    verified: true,
+    lastMessage: 'Halo kak, unit sudah disiapkan & dibersihkan untuk jam 09:00 di Tugu.',
+    time: '10:45 WIB',
+    unreadCount: 1,
+  },
+  {
+    id: 'm-2',
+    sender: 'Muvo Support Jogja',
+    role: 'Muvo Support',
+    verified: true,
+    lastMessage: 'Verifikasi KTP & SIM A kakak sudah disetujui untuk sewa Lepas Kunci.',
+    time: 'Kemarin',
+    unreadCount: 0,
+  },
+];
+
+export function MarketplaceHome({
+  initialProvince = 'jogja',
+  initialLang = 'id',
+}: MarketplaceHomeProps) {
   const [lang, setLang] = useState<'id' | 'en'>(initialLang);
+  const [activeTab, setActiveTab] = useState<UserTab>('home');
   const [provinceSlug, setProvinceSlug] = useState(initialProvince);
 
-  // Default pickup tomorrow at 09:00
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const defaultDate = tomorrow.toISOString().slice(0, 10);
-
-  const [pickupDate, setPickupDate] = useState(defaultDate);
-  const [pickupTime, setPickupTime] = useState('09:00');
-  const [durationHours, setDurationHours] = useState<DurationHours>(12);
+  // Search & Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [startDate, setStartDate] = useState(defaultTomorrowDate);
+  const [startTime, setStartTime] = useState('09:00');
+  const [duration, setDuration] = useState<DurationHours>(12);
   const [mode, setMode] = useState<RentalMode>('LEPAS_KUNCI');
   const [packageType, setPackageType] = useState<PackageType>('UNIT_ONLY');
   const [pickupPointId, setPickupPointId] = useState('pp-diy-yia');
-
-  // Filters
+  const [category, setCategory] = useState<'ALL' | VehicleCategory>('ALL');
   const [transmission, setTransmission] = useState<'ALL' | 'MATIC' | 'MANUAL'>('ALL');
-  const [minSeats, setMinSeats] = useState<number>(0);
+  const [minSeats, setMinSeats] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(2000000);
   const [freeDeliveryOnly, setFreeDeliveryOnly] = useState(false);
+  const [gpsOnly, setGpsOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('recommended');
 
-  const [data, setData] = useState<SearchApiResponse | null>(null);
+  // Data payload
+  const [payload, setPayload] = useState<SearchApiPayload | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Checkout Modal State
-  const [selectedItem, setSelectedItem] = useState<SearchResultItem | null>(null);
-  const [renterName, setRenterName] = useState('Raka Pratama');
-  const [renterPhone, setRenterPhone] = useState('+6281226008899');
-  const [renterEmail, setRenterEmail] = useState('raka.pratama@example.com');
-  const [ktpNumber, setKtpNumber] = useState('3471041205950002');
-  const [simNumber, setSimNumber] = useState('950512340011');
-  const [simExpiry, setSimExpiry] = useState('2029-05-12');
-  const [simulateBlurOcr, setSimulateBlurOcr] = useState(false);
-  const [ocrResult, setOcrResult] = useState<OcrVerificationResult | null>(null);
-  const [ocrLoading, setOcrLoading] = useState(false);
-  const [gpsConsent, setGpsConsent] = useState(true);
-  const [gateway, setGateway] = useState<'MIDTRANS' | 'XENDIT'>('MIDTRANS');
-  const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  // User states
+  const [account, setAccount] = useState<UserAccount>({
+    loggedIn: false,
+    name: 'Nadia Kusuma',
+    email: 'nadia.kusuma@muvo.id',
+    phone: '081299887766',
+    ktpVerified: true,
+    simVerified: true,
+    memberTier: 'Muvo Prioritas',
+  });
+  const [wishlistIds, setWishlistIds] = useState<string[]>(['veh-diy-brio', 'veh-diy-avanza']);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [savedSearches, setSavedSearches] = useState<SavedSearchItem[]>(INITIAL_SAVED_SEARCHES);
+  const [notifications, setNotifications] =
+    useState<UserNotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [sessionBookings, setSessionBookings] = useState<Booking[]>([]);
+  const [aiTip, setAiTip] = useState<string | null>(null);
 
+  // Modals
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<MarketplaceSearchItem | null>(null);
+  const [partnerProfile, setPartnerProfile] = useState<PartnerProfile | null>(null);
+  const [bookingItem, setBookingItem] = useState<MarketplaceSearchItem | null>(null);
+
+  // Sync pickup default when province changes
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const startIso = new Date(`${pickupDate}T${pickupTime}:00`).toISOString();
-      const qs = new URLSearchParams({
-        province: provinceSlug,
-        startAt: startIso,
-        duration: String(durationHours),
-        mode,
-        package: packageType,
-        pickupPointId,
-        transmission,
-        minSeats: String(minSeats),
-        freeDeliveryOnly: String(freeDeliveryOnly),
+    let active = true;
+    const startAtIso = new Date(`${startDate}T${startTime}:00+07:00`).toISOString();
+    const params = new URLSearchParams({
+      province: provinceSlug,
+      startAt: startAtIso,
+      duration: String(duration),
+      mode,
+      package: packageType,
+      pickupPointId,
+      transmission,
+      minSeats: String(minSeats),
+      maxPrice: maxPrice < 2000000 ? String(maxPrice) : '0',
+      freeDeliveryOnly: String(freeDeliveryOnly),
+    });
+
+    fetch(`/api/search?${params.toString()}`)
+      .then((res) => res.json())
+      .then((json: SearchApiPayload) => {
+        if (!active) return;
+        setPayload(json);
+        if (
+          json.pickupPoints.length > 0 &&
+          !json.pickupPoints.some((p) => p.id === pickupPointId)
+        ) {
+          setPickupPointId(json.pickupPoints[0].id);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) setLoading(false);
       });
-      const res = await fetch(`/api/search?${qs.toString()}`);
-      const json = (await res.json()) as SearchApiResponse;
-      if (cancelled) return;
-      setData(json);
-      if (json.pickupPoints.length > 0 && !json.pickupPoints.some((p) => p.id === pickupPointId)) {
-        setPickupPointId(json.pickupPoints[0].id);
-      }
-      setLoading(false);
-    })();
+
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, [
     provinceSlug,
-    pickupDate,
-    pickupTime,
-    durationHours,
+    startDate,
+    startTime,
+    duration,
     mode,
     packageType,
     pickupPointId,
     transmission,
     minSeats,
+    maxPrice,
     freeDeliveryOnly,
   ]);
 
-  const handleModePackageSelect = (newMode: RentalMode, newPkg: PackageType) => {
-    setMode(newMode);
-    setPackageType(newPkg);
-  };
+  const rawItems = useMemo(() => payload?.items ?? [], [payload]);
 
-  const handleRunOcr = async () => {
-    setOcrLoading(true);
-    try {
-      const res = await fetch('/api/ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userName: renterName,
-          docType: 'SIM_A',
-          claimedNumber: simNumber,
-          claimedExpiry: simExpiry,
-          simulateBlur: simulateBlurOcr,
-        }),
-      });
-      const json = (await res.json()) as { result: OcrVerificationResult };
-      setOcrResult(json.result);
-    } finally {
-      setOcrLoading(false);
-    }
-  };
-
-  const handleCheckoutSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedItem) return;
-    setCheckoutSubmitting(true);
-    setCheckoutError(null);
-
-    try {
-      const startIso = new Date(`${pickupDate}T${pickupTime}:00`).toISOString();
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vehicleId: selectedItem.vehicle.id,
-          provinceId: selectedItem.vehicle.provinceId,
-          renterName,
-          renterPhone,
-          renterEmail,
-          durationHours,
-          startAtIso: startIso,
-          mode,
-          packageType,
-          pickupPointId,
-          gpsConsentAccepted: mode === 'LEPAS_KUNCI' ? gpsConsent : true,
-          gateway,
-          idempotencyKey: `${selectedItem.vehicle.id}-${pickupDate}-${pickupTime}-${durationHours}`,
-        }),
-      });
-      const json = (await res.json()) as {
-        ok: boolean;
-        error?: string;
-        booking?: { code: string };
-      };
-      if (!res.ok || !json.ok || !json.booking) {
-        setCheckoutError(json.error || 'Booking gagal diproses.');
-        return;
+  const filteredItems = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const list = rawItems.filter((item) => {
+      if (category !== 'ALL' && item.vehicle.category !== category) return false;
+      if (gpsOnly && !item.vehicle.hasGpsTracker) return false;
+      if (q) {
+        const hay = `${item.vehicle.brandModel} ${item.partner.businessName} ${item.hubName} ${item.vehicle.transmission}`.toLowerCase();
+        if (!hay.includes(q)) return false;
       }
-      router.push(`/booking/${json.booking.code}`);
-    } catch {
-      setCheckoutError('Terjadi kendala jaringan saat memproses booking.');
-    } finally {
-      setCheckoutSubmitting(false);
-    }
-  };
-
-  const endDisplay = (() => {
-    const start = new Date(`${pickupDate}T${pickupTime}:00`);
-    const end = new Date(start.getTime() + durationHours * 3600 * 1000);
-    return end.toLocaleString(lang === 'en' ? 'en-GB' : 'id-ID', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
+      return true;
     });
-  })();
 
-  const t = {
-    h1:
-      lang === 'en'
-        ? 'Jogja car rental, fixed final price.'
-        : 'Sewa mobil Jogja, harga final pasti.',
-    sub:
-      lang === 'en'
-        ? 'Compare verified Yogyakarta rentals with live calendar locks, 6/12/24h flexible start times, OSRM delivery fees, and optional Full Fuel + Driver packages.'
-        : 'Bandingkan unit rental lokal terverifikasi di DIY dengan kalender anti-double-book, durasi fleksibel 6/12/24 jam, ongkos antar OSRM, dan paket Full BBM + Sopir.',
-    searchBtn: lang === 'en' ? 'Check Availability' : 'Cek Ketersediaan',
-    bookBtn: lang === 'en' ? 'Book with Fixed DP' : 'Booking & Bayar DP',
+    const sorted = [...list];
+    if (sortBy === 'price_asc') {
+      sorted.sort(
+        (a, b) => (a.price?.rentalTotal ?? 99999999) - (b.price?.rentalTotal ?? 99999999)
+      );
+    } else if (sortBy === 'price_desc') {
+      sorted.sort((a, b) => (b.price?.rentalTotal ?? 0) - (a.price?.rentalTotal ?? 0));
+    } else if (sortBy === 'rating_desc') {
+      sorted.sort((a, b) => b.partner.rating - a.partner.rating);
+    } else if (sortBy === 'nearest') {
+      sorted.sort((a, b) => a.routeQuote.distanceKm - b.routeQuote.distanceKm);
+    }
+    return sorted;
+  }, [rawItems, category, gpsOnly, searchQuery, sortBy]);
+
+  const wishlistedItems = useMemo(
+    () => rawItems.filter((item) => wishlistIds.includes(item.vehicle.id)),
+    [rawItems, wishlistIds]
+  );
+
+  const compareItems = useMemo(
+    () => rawItems.filter((item) => compareIds.includes(item.vehicle.id)),
+    [rawItems, compareIds]
+  );
+
+  const activeProvince = payload?.province;
+  const pickupPoints = payload?.pickupPoints ?? [];
+  const provinces = payload?.provinces ?? [];
+  const unreadNotifCount = notifications.filter((n) => n.unread).length;
+
+  const toggleWishlist = (vehicleId: string) => {
+    setWishlistIds((prev) =>
+      prev.includes(vehicleId) ? prev.filter((id) => id !== vehicleId) : [...prev, vehicleId]
+    );
   };
 
-  const activeProvince = data?.province;
+  const toggleCompare = (vehicleId: string) => {
+    setCompareIds((prev) => {
+      if (prev.includes(vehicleId)) return prev.filter((id) => id !== vehicleId);
+      if (prev.length >= 3) return [...prev.slice(1), vehicleId];
+      return [...prev, vehicleId];
+    });
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setCategory('ALL');
+    setTransmission('ALL');
+    setMinSeats(0);
+    setMaxPrice(2000000);
+    setFreeDeliveryOnly(false);
+    setGpsOnly(false);
+    setSortBy('recommended');
+  };
+
+  const handleApplyAiPreset = (preset: 'family' | 'city' | 'vip') => {
+    if (preset === 'family') {
+      setCategory('MPV');
+      setMinSeats(7);
+      setMode('DENGAN_SOPIR');
+      setPackageType('FULL_BBM_DRIVER');
+      setAiTip('Pilihan terbaik keluarga: MPV 7 kursi + Paket Full BBM & Sopir lokal Jogja.');
+    } else if (preset === 'city') {
+      setCategory('CITY_CAR');
+      setTransmission('MATIC');
+      setDuration(6);
+      setMode('LEPAS_KUNCI');
+      setPackageType('UNIT_ONLY');
+      setAiTip('Pilihan hemat keliling kota: City Car Matic 6 jam Lepas Kunci.');
+    } else {
+      setCategory('EXECUTIVE_MPV');
+      setMode('DENGAN_SOPIR');
+      setPackageType('WITH_DRIVER');
+      setAiTip('Pilihan eksekutif Bandara YIA & perjalanan bisnis dengan sopir terverifikasi.');
+    }
+    setActiveTab('search');
+  };
+
+  const autocompleteMatches = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const base = [
+      'Toyota Avanza',
+      'Honda Brio',
+      'Innova Zenix',
+      'Mitsubishi Xpander',
+      'Toyota Hiace',
+      'Bandara YIA',
+      'Stasiun Tugu',
+      'Malioboro',
+    ];
+    if (!q) return base.slice(0, 5);
+    return base.filter((b) => b.toLowerCase().includes(q));
+  }, [searchQuery]);
+
+  const brands = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of rawItems) {
+      const b = brandFromModel(item.vehicle.brandModel);
+      map.set(b, (map.get(b) ?? 0) + 1);
+    }
+    return Array.from(map.entries());
+  }, [rawItems]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e6dbc7] text-[#062b8a]">
+    <div className="min-h-screen flex flex-col bg-[#F7F7F8] text-[#0D0D0D]">
       <Navbar
-        lang={lang}
-        onLangChange={setLang}
         activeProvinceSlug={provinceSlug}
-        onProvinceChange={setProvinceSlug}
+        onSelectProvince={(slug) => {
+          setProvinceSlug(slug);
+          setActiveTab('search');
+        }}
+        lang={lang}
+        onToggleLang={() => setLang((l) => (l === 'id' ? 'en' : 'id'))}
+        activeTab={activeTab}
+        onSelectTab={(t) => {
+          setActiveTab(t);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        wishlistCount={wishlistIds.length}
+        compareCount={compareIds.length}
+        notifCount={unreadNotifCount}
+        userName={account.name}
+        loggedIn={account.loggedIn}
+        onOpenAuth={() => setAuthModalOpen(true)}
+        onOpenCompare={() => setCompareModalOpen(true)}
       />
 
-      {/* HERO SECTION: Voucher Artefact + Real Jogja Photography */}
-      <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 pt-8 pb-10">
-        <div className="voucher-ticket rounded-2xl overflow-hidden border-2 border-[#062b8a]">
-          {/* Top Hero Strip */}
-          <div className="grid grid-cols-1 lg:grid-cols-12">
-            <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-between bg-[#faf7f0]">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-5">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#062b8a] text-[#e6dbc7] text-xs font-semibold">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {activeProvince?.name || 'DI Yogyakarta'} ({activeProvince?.code || 'DIY'})
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#e6dbc7] text-[#062b8a] text-xs font-medium">
-                    Multi-Province Engine Ready
-                  </span>
-                </div>
-
-                <h1 className="text-4xl sm:text-5xl font-semibold tracking-[-0.03em] leading-[1.02] text-[#062b8a] max-w-[18ch] mb-4">
-                  {t.h1}
-                </h1>
-                <p className="text-base sm:text-lg text-[#062b8a]/85 leading-relaxed max-w-xl">
-                  {t.sub}
-                </p>
-              </div>
-
-              <div className="mt-6 pt-5 border-t border-dotted border-[#062b8a]/30 grid grid-cols-3 gap-4 text-xs sm:text-sm">
-                <div>
-                  <span className="block font-semibold text-[#062b8a]">6 / 12 / 24 Jam</span>
-                  <span className="text-[#3a5aa8]">Jam mulai fleksibel</span>
-                </div>
-                <div>
-                  <span className="block font-semibold text-[#062b8a]">OSRM + Traccar</span>
-                  <span className="text-[#3a5aa8]">Rute jalan & GPS aman</span>
-                </div>
-                <div>
-                  <span className="block font-semibold text-[#062b8a]">Tesseract OCR</span>
-                  <span className="text-[#3a5aa8]">Verifikasi sekali pakai</span>
-                </div>
-              </div>
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-5 sm:py-7 space-y-6 pb-24 md:pb-10">
+        {/* Pilot notice when selecting expansion provinces */}
+        {activeProvince && activeProvince.status !== 'ACTIVE' && (
+          <div className="rounded-3xl bg-[#0D0D0D] text-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FF5500] text-white text-[10px] font-extrabold uppercase">
+                Ekspansi Multi-Provinsi • Siap Launching
+              </span>
+              <h2 className="text-lg font-extrabold">
+                {activeProvince.name} masuk peta ekspansi Muvo berikutnya
+              </h2>
+              <p className="text-xs text-white/75 max-w-xl">
+                Saat ini armada terverifikasi aktif beroperasi penuh di DI Yogyakarta. Infrastruktur
+                hub ({activeProvince.popularCorridors.join(', ')}) sudah siap diaktifkan.
+              </p>
             </div>
-
-            <div className="lg:col-span-5 relative min-h-[240px] lg:min-h-[340px] bg-[#062b8a]">
-              <img
-                src="/images/hero-jogja.jpg"
-                alt="Armada MPV di jalur wisata Yogyakarta berlatar Gunung Merapi"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute bottom-3 left-3 right-3 bg-[#062b8a]/90 text-[#e6dbc7] px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between">
-                <span>Pilot Koridor: YIA • Stasiun Tugu • Malioboro • Sleman</span>
-                <span className="font-mono font-semibold">DIY-01</span>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => setProvinceSlug('jogja')}
+              className="px-5 py-2.5 rounded-full bg-white text-[#0D0D0D] hover:bg-[#FF5500] hover:text-white text-xs font-extrabold whitespace-nowrap shrink-0 cursor-pointer transition-colors"
+            >
+              Kembali ke Jogja (Aktif)
+            </button>
           </div>
+        )}
 
-          {/* Perforated Voucher Search Bar — 1 Single Horizontal Line */}
-          <div className="border-t-4 border-dotted border-[#ddd0b9] bg-[#faf7f0] p-5 sm:p-6">
-            <div className="flex flex-nowrap items-end gap-2.5 overflow-x-auto no-scrollbar pb-1">
-              {/* Province */}
-              <div className="min-w-[155px] flex-1 shrink-0">
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
-                  {lang === 'en' ? 'Province' : 'Provinsi'}
-                </label>
-                <select
-                  value={provinceSlug}
-                  onChange={(e) => setProvinceSlug(e.target.value)}
-                  className="w-full h-11 px-3 rounded-lg bg-[#e6dbc7]/50 border border-[#062b8a]/25 text-sm font-medium text-[#062b8a] whitespace-nowrap"
-                >
-                  <option value="jogja">DI Yogyakarta (Aktif)</option>
-                  <option value="jawa-tengah">Jawa Tengah (V2)</option>
-                  <option value="jawa-timur">Jawa Timur (V2)</option>
-                  <option value="bali">Bali (V2)</option>
-                </select>
-              </div>
-
+        {/* 1-Line Quick Rental Config Bar (shown on Home & Search) */}
+        {(activeTab === 'home' || activeTab === 'search') && (
+          <div className="rounded-2xl bg-white border border-black/10 p-2.5 shadow-sm">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap">
               {/* Pickup Point */}
-              <div className="min-w-[215px] flex-[1.6] shrink-0">
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
-                  {lang === 'en' ? 'Pickup Point' : 'Titik Ambil'}
-                </label>
+              <div className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-[#F7F7F8] border border-black/10 shrink-0 whitespace-nowrap">
+                <MapPin className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
                 <select
+                  aria-label="Titik Ambil"
                   value={pickupPointId}
                   onChange={(e) => setPickupPointId(e.target.value)}
-                  className="w-full h-11 px-3 rounded-lg bg-[#e6dbc7]/50 border border-[#062b8a]/25 text-sm font-medium text-[#062b8a] whitespace-nowrap"
+                  className="bg-transparent text-xs font-bold text-[#0D0D0D] focus:outline-none cursor-pointer whitespace-nowrap"
                 >
-                  {(data?.pickupPoints || []).map((pp) => (
+                  {pickupPoints.map((pp) => (
                     <option key={pp.id} value={pp.id}>
-                      {lang === 'en' ? pp.nameEn : pp.name}
+                      {pp.name}
                     </option>
                   ))}
                 </select>
               </div>
 
               {/* Date */}
-              <div className="min-w-[142px] flex-1 shrink-0">
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
-                  {lang === 'en' ? 'Start Date' : 'Tanggal Mulai'}
-                </label>
-                <input
-                  type="date"
-                  value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
-                  className="w-full h-11 px-3 rounded-lg bg-[#e6dbc7]/50 border border-[#062b8a]/25 text-sm font-medium text-[#062b8a]"
-                />
-              </div>
+              <input
+                type="date"
+                aria-label="Tanggal Mulai"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-10 px-3 rounded-xl bg-[#F7F7F8] border border-black/10 text-xs font-bold text-[#0D0D0D] shrink-0 whitespace-nowrap focus:outline-none"
+              />
 
               {/* Time */}
-              <div className="min-w-[104px] w-[110px] shrink-0">
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
-                  {lang === 'en' ? 'Time' : 'Jam'}
-                </label>
-                <input
-                  type="time"
-                  value={pickupTime}
-                  onChange={(e) => setPickupTime(e.target.value)}
-                  className="w-full h-11 px-2.5 rounded-lg bg-[#e6dbc7]/50 border border-[#062b8a]/25 text-sm font-mono font-medium text-[#062b8a]"
-                />
-              </div>
-
-              {/* Duration 6 / 12 / 24 */}
-              <div className="min-w-[148px] shrink-0">
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
-                  {lang === 'en' ? 'Duration' : 'Durasi'}
-                </label>
-                <div className="grid grid-cols-3 gap-1 bg-[#e6dbc7]/60 p-1 rounded-lg border border-[#062b8a]/20 h-11">
-                  {([6, 12, 24] as DurationHours[]).map((dur) => (
-                    <button
-                      key={dur}
-                      type="button"
-                      onClick={() => setDurationHours(dur)}
-                      className={`rounded-md text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap px-2 ${
-                        durationHours === dur
-                          ? 'bg-[#062b8a] text-[#e6dbc7]'
-                          : 'text-[#062b8a] hover:bg-[#ddd0b9]'
-                      }`}
-                    >
-                      {dur}j
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Mode & Package */}
-              <div className="min-w-[205px] flex-[1.3] shrink-0">
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#3a5aa8] mb-1.5 whitespace-nowrap">
-                  {lang === 'en' ? 'Mode & Package' : 'Mode & Paket'}
-                </label>
+              <div className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-[#F7F7F8] border border-black/10 shrink-0 whitespace-nowrap">
+                <Clock className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
                 <select
-                  value={`${mode}:${packageType}`}
-                  onChange={(e) => {
-                    const [m, p] = e.target.value.split(':') as [RentalMode, PackageType];
-                    handleModePackageSelect(m, p);
-                  }}
-                  className="w-full h-11 px-3 rounded-lg bg-[#062b8a] text-[#e6dbc7] text-sm font-semibold cursor-pointer whitespace-nowrap"
+                  aria-label="Jam Ambil"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-[#0D0D0D] focus:outline-none cursor-pointer tabular-nums"
                 >
-                  <option value="LEPAS_KUNCI:UNIT_ONLY">
-                    {lang === 'en' ? 'Self-Drive (Unit Only)' : 'Lepas Kunci (Unit Saja)'}
-                  </option>
-                  <option value="DENGAN_SOPIR:WITH_DRIVER">
-                    {lang === 'en' ? 'With Driver (No Fuel)' : 'Dengan Sopir (Non-BBM)'}
-                  </option>
-                  <option value="DENGAN_SOPIR:FULL_BBM_DRIVER">
-                    {lang === 'en' ? 'Full Fuel + Driver' : 'Paket Full BBM + Sopir'}
-                  </option>
+                  {['07:00', '09:00', '11:00', '13:00', '15:00', '17:00', '19:00'].map((t) => (
+                    <option key={t} value={t}>
+                      {t} WIB
+                    </option>
+                  ))}
                 </select>
               </div>
-            </div>
 
-            {/* Calculated Finish Time + Pickup Grace Notice — Single Line */}
-            <div className="mt-3.5 flex flex-nowrap items-center justify-between gap-4 overflow-x-auto no-scrollbar whitespace-nowrap text-xs text-[#3a5aa8]">
-              <div className="flex flex-nowrap items-center gap-3 shrink-0">
-                <span className="inline-flex items-center gap-1.5 font-medium text-[#062b8a] shrink-0">
-                  <Clock className="w-3.5 h-3.5 shrink-0" />
-                  Selesai otomatis: <strong className="font-mono">{endDisplay} WIB</strong>
-                </span>
-                {durationHours === 6 && (
-                  <span className="inline-flex items-center gap-1 bg-[#e6dbc7] px-2.5 py-0.5 rounded-full text-[#062b8a] font-medium shrink-0">
-                    +30 mnt paruh jam cuci & cek unit otomatis (FR-MIT-03)
-                  </span>
-                )}
-                {data?.pickup && (
-                  <span className="shrink-0">
-                    Masa tunggu gratis titik jemput: <strong>{data.pickup.freeWaitingMinutes} menit</strong>
-                  </span>
-                )}
+              {/* Duration 6/12/24h */}
+              <div className="flex items-center gap-1 h-10 p-1 rounded-xl bg-[#F7F7F8] border border-black/10 shrink-0 flex-nowrap">
+                {([6, 12, 24] as DurationHours[]).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDuration(d)}
+                    className={`h-8 px-2.5 rounded-lg text-xs font-extrabold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                      duration === d
+                        ? 'bg-[#0D0D0D] text-white'
+                        : 'text-[#0D0D0D]/70 hover:text-[#0D0D0D]'
+                    }`}
+                  >
+                    {d}J
+                  </button>
+                ))}
               </div>
-              <span className="font-medium shrink-0">
-                {mode === 'LEPAS_KUNCI'
-                  ? 'Membutuhkan verifikasi KTP & SIM A + Deposit Escrow'
-                  : 'Tanpa SIM penyewa & tanpa deposit lepas kunci'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* EXPANSION PROVINCE NOTICE IF NON-DIY SELECTED */}
-      {activeProvince && activeProvince.status !== 'ACTIVE' && (
-        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-8">
-          <div className="rounded-2xl bg-[#062b8a] text-[#e6dbc7] p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div>
-              <span className="inline-block px-3 py-1 rounded-full bg-[#e6dbc7] text-[#062b8a] text-xs font-semibold mb-3">
-                Status Wilayah: {activeProvince.status === 'PILOT_READY' ? 'SIAP PILOT V2' : 'INFRASTRUKTUR MULTI-PROVINSI SIAP'}
-              </span>
-              <h2 className="text-2xl font-semibold mb-2">
-                {activeProvince.name} masuk peta ekspansi Dolan berikutnya
-              </h2>
-              <p className="text-sm text-[#e6dbc7]/85 max-w-2xl">
-                Skema database, zona geofence Traccar, konfigurasi tarif regional, dan routing SEO untuk{' '}
-                <strong>{activeProvince.popularCorridors.join(', ')}</strong> sudah aktif di backend. Transaksi
-                publik saat ini difokuskan di <strong>DI Yogyakarta</strong> sesuai strategi MVP supply-first.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setProvinceSlug('jogja')}
-                className="px-4 py-2.5 rounded-lg bg-[#e6dbc7] text-[#062b8a] text-sm font-semibold cursor-pointer"
-              >
-                Lihat Armada Jogja (Aktif)
-              </button>
-              <Link
-                href="/admin"
-                className="px-4 py-2.5 rounded-lg border border-[#e6dbc7]/40 text-sm font-semibold text-center"
-              >
-                Kelola Provinsi di Admin
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* FILTER BAR & RESULTS */}
-      {(!activeProvince || activeProvince.status === 'ACTIVE') && (
-        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-14">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-                {lang === 'en'
-                  ? 'Verified Yogyakarta Fleet'
-                  : 'Armada Terverifikasi di DI Yogyakarta'}
-              </h2>
-              <p className="text-sm text-[#3a5aa8]">
-                Harga tiap durasi ditetapkan mandiri oleh mitra (bukan kelipatan otomatis). Total tampil utuh sebelum checkout.
-              </p>
-            </div>
-
-            <div className="flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap shrink-0">
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#3a5aa8] mr-1 shrink-0">
-                <SlidersHorizontal className="w-3.5 h-3.5" /> Filter:
-              </span>
-              <select
-                value={transmission}
-                onChange={(e) => setTransmission(e.target.value as 'ALL' | 'MATIC' | 'MANUAL')}
-                className="px-3 py-1.5 rounded-lg bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-semibold shrink-0"
-              >
-                <option value="ALL">Semua Transmisi</option>
-                <option value="MATIC">Matic / CVT</option>
-                <option value="MANUAL">Manual</option>
-              </select>
-              <select
-                value={minSeats}
-                onChange={(e) => setMinSeats(Number(e.target.value))}
-                className="px-3 py-1.5 rounded-lg bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-semibold shrink-0"
-              >
-                <option value={0}>Semua Kursi</option>
-                <option value={5}>5+ Kursi</option>
-                <option value={7}>7+ Kursi (Keluarga)</option>
-                <option value={12}>12 Kursi (Hiace)</option>
-              </select>
-              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-semibold cursor-pointer shrink-0 whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  checked={freeDeliveryOnly}
-                  onChange={(e) => setFreeDeliveryOnly(e.target.checked)}
-                />
-                Gratis Antar
-              </label>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-96 rounded-2xl bg-[#faf7f0]/70 animate-pulse border border-[#062b8a]/10"
-                />
-              ))}
-            </div>
-          ) : data && data.items.length === 0 ? (
-            <div className="rounded-2xl bg-[#faf7f0] border-2 border-[#062b8a]/20 p-8 text-center">
-              <h3 className="text-xl font-semibold mb-2">
-                Tidak ada unit yang sesuai filter saat ini
-              </h3>
-              <p className="text-sm text-[#3a5aa8] mb-5">
-                Coba geser jam mulai, pilih mode dengan sopir, atau reset filter kursi dan transmisi.
-              </p>
-              <div className="flex flex-wrap justify-center gap-3">
+              {/* Mode */}
+              <div className="flex items-center gap-1 h-10 p-1 rounded-xl bg-[#F7F7F8] border border-black/10 shrink-0 flex-nowrap">
                 <button
                   type="button"
                   onClick={() => {
-                    setTransmission('ALL');
-                    setMinSeats(0);
-                    setFreeDeliveryOnly(false);
+                    setMode('LEPAS_KUNCI');
+                    setPackageType('UNIT_ONLY');
                   }}
-                  className="px-4 py-2 rounded-lg bg-[#062b8a] text-[#e6dbc7] text-sm font-semibold cursor-pointer"
+                  className={`h-8 px-3 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer ${
+                    mode === 'LEPAS_KUNCI' ? 'bg-[#0D0D0D] text-white' : 'text-[#0D0D0D]/75'
+                  }`}
                 >
-                  Reset Filter
+                  Lepas Kunci
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleModePackageSelect('DENGAN_SOPIR', 'WITH_DRIVER')}
-                  className="px-4 py-2 rounded-lg border border-[#062b8a] text-sm font-semibold cursor-pointer"
-                >
-                  Coba Mode Dengan Sopir
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(data?.items || []).map((item) => {
-                const { vehicle, partner, routeQuote, price, rateAvailable, calendarAvailable } = item;
-                const canBook = rateAvailable && calendarAvailable && price !== null;
-
-                return (
-                  <article
-                    key={vehicle.id}
-                    className={`rounded-2xl bg-[#faf7f0] border-2 flex flex-col overflow-hidden transition-transform ${
-                      canBook
-                        ? 'border-[#062b8a]'
-                        : 'border-[#062b8a]/25 opacity-90'
-                    }`}
-                  >
-                    {/* Photo */}
-                    <div className="relative h-48 bg-[#ddd0b9]">
-                      <img
-                        src={vehicle.photo}
-                        alt={vehicle.brandModel}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                        <span className="px-2.5 py-1 rounded-md bg-[#062b8a] text-[#e6dbc7] text-[11px] font-semibold">
-                          {vehicle.transmission} • {vehicle.seats} Kursi
-                        </span>
-                        <span className="px-2.5 py-1 rounded-md bg-[#faf7f0]/95 text-[#062b8a] text-[11px] font-semibold">
-                          {vehicle.year} • {vehicle.fuelType}
-                        </span>
-                      </div>
-                      {vehicle.hasGpsTracker && (
-                        <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#faf7f0]/95 text-[#062b8a] text-[11px] font-semibold">
-                          <Navigation className="w-3 h-3" /> GPS Traccar
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Details */}
-                    <div className="p-5 flex-1 flex flex-col justify-between gap-4">
-                      <div>
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="text-lg font-semibold leading-snug">
-                            {vehicle.brandModel}
-                          </h3>
-                          <span className="text-xs font-mono text-[#3a5aa8] shrink-0">
-                            {vehicle.plateMasked}
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#3a5aa8] mb-3">
-                          {partner.businessName} • {item.hubName} • ★ {partner.rating} ({partner.completedTrips} trip)
-                        </p>
-
-                        {/* OSRM Route & ETA Quote */}
-                        <div className="rounded-lg bg-[#e6dbc7]/50 p-2.5 text-xs mb-3 flex items-center justify-between gap-2">
-                          <div>
-                            <span className="font-semibold block">
-                              Antar ke titik jemput ({routeQuote.distanceKm} km • ~{routeQuote.durationMinutes} mnt)
-                            </span>
-                            <span className="text-[#3a5aa8] text-[11px]">
-                              {routeQuote.source === 'ZONE_FALLBACK'
-                                ? 'Estimasi tarif zona'
-                                : 'Rute jalan OSRM / OSM'}
-                            </span>
-                          </div>
-                          <span className="font-mono font-semibold text-right shrink-0">
-                            {routeQuote.isFreeZone ? 'GRATIS' : formatRp(routeQuote.deliveryFee)}
-                          </span>
-                        </div>
-
-                        {/* Full BBM + Sopir Explicit Boundaries (FR-REN-14) */}
-                        {packageType === 'FULL_BBM_DRIVER' &&
-                          rateAvailable &&
-                          vehicle.ratePlan.fullBbmTerms && (
-                            <div className="rounded-lg bg-[#062b8a]/8 border border-[#062b8a]/20 p-3 text-xs space-y-1 mb-3">
-                              <div className="flex items-center gap-1.5 font-semibold text-[#062b8a]">
-                                <Fuel className="w-3.5 h-3.5" />
-                                Batas Paket Full BBM + Sopir:
-                              </div>
-                              <p className="text-[#062b8a]/85">
-                                Wilayah: {vehicle.ratePlan.fullBbmTerms.wilayah} (maks{' '}
-                                <strong>{vehicle.ratePlan.fullBbmTerms.maxKm} km</strong>)
-                              </p>
-                              <p className="text-[#3a5aa8]">
-                                Tol: {vehicle.ratePlan.fullBbmTerms.tollIncluded ? 'Termasuk' : 'Di luar paket'} •
-                                Parkir: {vehicle.ratePlan.fullBbmTerms.parkingIncluded ? 'Termasuk' : 'Di luar paket'} •
-                                Makan sopir: {vehicle.ratePlan.fullBbmTerms.driverMealIncluded ? 'Termasuk' : 'Di luar paket'}
-                              </p>
-                            </div>
-                          )}
-
-                        {/* Final Breakdown OR Honest Unavailable Alternative */}
-                        {canBook && price ? (
-                          <div className="border-t border-dotted border-[#062b8a]/30 pt-3 space-y-1.5 text-xs">
-                            <div className="flex justify-between">
-                              <span className="text-[#3a5aa8]">
-                                Sewa {durationHours} jam ({packageType === 'FULL_BBM_DRIVER' ? 'Full BBM + Sopir' : mode === 'DENGAN_SOPIR' ? 'Dengan Sopir' : 'Lepas Kunci'})
-                              </span>
-                              <span className="font-mono font-semibold">
-                                {formatRp(price.baseRentalFee)}
-                              </span>
-                            </div>
-                            {price.seasonalSurcharge > 0 && (
-                              <div className="flex justify-between text-[#062b8a]">
-                                <span>{price.seasonalLabel}</span>
-                                <span className="font-mono font-semibold">
-                                  +{formatRp(price.seasonalSurcharge)}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex justify-between">
-                              <span className="text-[#3a5aa8]">Biaya antar & jemput</span>
-                              <span className="font-mono font-semibold">
-                                {price.deliveryFee === 0 ? 'Rp 0' : formatRp(price.deliveryFee)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-[#3a5aa8]">
-                                Deposit escrow {mode === 'DENGAN_SOPIR' ? '(bebas deposit)' : '(kembali)'}
-                              </span>
-                              <span className="font-mono font-semibold">
-                                {formatRp(price.depositAmount)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between pt-2 border-t border-[#062b8a]/15 text-sm font-semibold">
-                              <span>Total Sewa Final</span>
-                              <span className="font-mono">{formatRp(price.rentalTotal)}</span>
-                            </div>
-                            <p className="text-[11px] text-[#3a5aa8]">
-                              Overtime: {formatRp(vehicle.ratePlan.overtimePerHour)}/jam • DP 30%:{' '}
-                              <strong className="font-mono text-[#062b8a]">
-                                {formatRp(price.dpAmount)}
-                              </strong>
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="rounded-lg bg-[#e6dbc7] p-3 text-xs space-y-2">
-                            <div className="flex items-start gap-1.5 font-semibold text-[#062b8a]">
-                              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                              <span>
-                                {!rateAvailable
-                                  ? `Tidak menawarkan ${durationHours} jam / ${packageType === 'FULL_BBM_DRIVER' ? 'Full BBM' : mode === 'LEPAS_KUNCI' ? 'Lepas Kunci' : 'Sopir'}`
-                                  : item.conflictReason || 'Jadwal terisi'}
-                              </span>
-                            </div>
-                            {item.alternativeOptions.length > 0 && (
-                              <div className="flex flex-nowrap items-center gap-1.5 pt-1 overflow-x-auto no-scrollbar">
-                                {item.alternativeOptions.slice(0, 3).map((alt, idx) => (
-                                  <button
-                                    key={idx}
-                                    type="button"
-                                    onClick={() => {
-                                      setDurationHours(alt.durationHours);
-                                      handleModePackageSelect(alt.mode, alt.packageType);
-                                    }}
-                                    className="px-2 py-1 rounded bg-[#faf7f0] border border-[#062b8a]/25 text-[11px] font-semibold hover:bg-[#062b8a] hover:text-[#e6dbc7] cursor-pointer whitespace-nowrap shrink-0"
-                                  >
-                                    {alt.durationHours}j • {alt.mode === 'LEPAS_KUNCI' ? 'Lepas Kunci' : 'Sopir'} ({formatRp(alt.baseRate)})
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={!canBook}
-                        onClick={() => {
-                          setSelectedItem(item);
-                          setCheckoutError(null);
-                          setOcrResult(null);
-                        }}
-                        className={`w-full py-3 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap transition-colors ${
-                          canBook
-                            ? 'bg-[#062b8a] text-[#e6dbc7] hover:bg-[#041f66] cursor-pointer'
-                            : 'bg-[#ddd0b9] text-[#3a5aa8] cursor-not-allowed'
-                        }`}
-                      >
-                        <span>
-                          {canBook
-                            ? `${t.bookBtn} (${formatRp(price!.totalDueNow)})`
-                            : 'Pilih Durasi / Jam Lain'}
-                        </span>
-                        {canBook && <ArrowRight className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* MULTI-PROVINCE INFRASTRUCTURE & 3 OSS PILLARS SECTION */}
-      <section className="bg-[#faf7f0] border-t-2 border-[#062b8a]/15 py-14">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-5">
-              <h2 className="text-3xl font-semibold tracking-tight mb-3">
-                Mulai di Jogja, arsitektur siap lintas provinsi
-              </h2>
-              <p className="text-sm sm:text-base text-[#3a5aa8] leading-relaxed mb-5">
-                Setiap provinsi di Dolan punya konfigurasi tarif OSRM, batas geofence Traccar,
-                daftar titik jemput (bandara/stasiun/hotel), aturan jeda sopir, dan rute SEO
-                tersendiri — sehingga ekspansi dari DIY ke Jawa Tengah, Jawa Timur, dan Bali tidak
-                perlu menulis ulang sistem inti.
-              </p>
-              <Link
-                href="/admin"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#062b8a] text-[#e6dbc7] text-sm font-semibold"
-              >
-                Buka Pengaturan Multi-Provinsi <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(data?.provinces || []).map((prov) => (
-                <div
-                  key={prov.id}
-                  className={`p-5 rounded-xl border ${
-                    prov.status === 'ACTIVE'
-                      ? 'bg-[#e6dbc7]/45 border-[#062b8a]'
-                      : 'bg-[#f4f3f1] border-[#062b8a]/15'
+                  onClick={() => {
+                    setMode('DENGAN_SOPIR');
+                    setPackageType('WITH_DRIVER');
+                  }}
+                  className={`h-8 px-3 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer ${
+                    mode === 'DENGAN_SOPIR' && packageType === 'WITH_DRIVER'
+                      ? 'bg-[#0D0D0D] text-white'
+                      : 'text-[#0D0D0D]/75'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="font-semibold text-base">{prov.name}</span>
-                    <span
-                      className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
-                        prov.status === 'ACTIVE'
-                          ? 'bg-[#062b8a] text-[#e6dbc7]'
-                          : 'bg-[#ddd0b9] text-[#062b8a]'
-                      }`}
-                    >
-                      {prov.status === 'ACTIVE'
-                        ? 'AKTIF MVP'
-                        : prov.status === 'PILOT_READY'
-                          ? 'SIAP PILOT V2'
-                          : 'INFRASTRUKTUR SIAP'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#3a5aa8] mb-3">
-                    Koridor: {prov.popularCorridors.join(' • ')}
-                  </p>
-                  <div className="flex items-center justify-between text-xs pt-2 border-t border-[#062b8a]/15">
-                    <span className="font-mono text-[#062b8a]">/{prov.slug}</span>
-                    <Link
-                      href={`/sewa-mobil/${prov.slug}`}
-                      className="font-semibold hover:underline"
-                    >
-                      Halaman SEO →
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                  + Sopir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('DENGAN_SOPIR');
+                    setPackageType('FULL_BBM_DRIVER');
+                  }}
+                  className={`h-8 px-3 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer ${
+                    mode === 'DENGAN_SOPIR' && packageType === 'FULL_BBM_DRIVER'
+                      ? 'bg-[#FF5500] text-white'
+                      : 'text-[#0D0D0D]/75'
+                  }`}
+                >
+                  Full BBM
+                </button>
+              </div>
+
+              {/* Filter Modal Button */}
+              <button
+                type="button"
+                onClick={() => setFilterModalOpen(true)}
+                className="ml-auto h-10 px-3.5 rounded-xl bg-[#0D0D0D] hover:bg-[#FF5500] text-white text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Filter</span>
+              </button>
             </div>
           </div>
+        )}
 
-          {/* 3 Verified Open-Source Integrations */}
-          <div className="pt-8 border-t border-dotted border-[#062b8a]/30 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-5 rounded-xl bg-[#e6dbc7]/40">
-              <div className="flex items-center gap-2 font-semibold mb-2">
-                <Navigation className="w-4 h-4" /> 1. Traccar GPS & Geofence
-              </div>
-              <p className="text-xs text-[#3a5aa8] leading-relaxed">
-                Pelacakan khusus unit lepas kunci selama masa sewa aktif (dengan persetujuan
-                eksplisit penyewa). Keluar zona provinsi atau overdue memicu alert ke mitra & admin.
-              </p>
-            </div>
-            <div className="p-5 rounded-xl bg-[#e6dbc7]/40">
-              <div className="flex items-center gap-2 font-semibold mb-2">
-                <MapPin className="w-4 h-4" /> 2. OSRM Road Routing & ETA
-              </div>
-              <p className="text-xs text-[#3a5aa8] leading-relaxed">
-                Biaya antar bandara YIA / hotel dihitung dari jarak rute jalan OpenStreetMap dan ETA
-                sebelum checkout, dengan fallback tarif zona bila layanan rute offline.
-              </p>
-            </div>
-            <div className="p-5 rounded-xl bg-[#e6dbc7]/40">
-              <div className="flex items-center gap-2 font-semibold mb-2">
-                <ScanText className="w-4 h-4" /> 3. Tesseract OCR Pre-Check
-              </div>
-              <p className="text-xs text-[#3a5aa8] leading-relaxed">
-                Ekstraksi otomatis nama, nomor, dan masa berlaku KTP/SIM A (`ind.traineddata`).
-                Foto buram atau keyakinan rendah masuk antrean verifikasi manual admin — tidak
-                pernah ditolak sepihak oleh bot.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CHECKOUT + OCR + GPS CONSENT MODAL */}
-      {selectedItem && selectedItem.price && (
-        <div className="fixed inset-0 z-50 bg-[#062b8a]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#faf7f0] text-[#062b8a] border-2 border-[#062b8a] rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 relative">
-            <button
-              type="button"
-              onClick={() => setSelectedItem(null)}
-              className="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-[#e6dbc7] cursor-pointer"
-              aria-label="Tutup modal checkout"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#3a5aa8]">
-              Checkout Transparan • Tanpa Biaya Kejutan
-            </span>
-            <h3 className="text-2xl font-semibold mt-1 mb-4">
-              {selectedItem.vehicle.brandModel} ({durationHours} Jam)
-            </h3>
-
-            {/* Immutable Snapshot Preview */}
-            <div className="rounded-xl bg-[#e6dbc7]/55 p-4 text-xs space-y-2 mb-5">
-              <div className="flex justify-between">
-                <span>Jadwal sewa</span>
-                <span className="font-mono font-semibold">
-                  {pickupDate} {pickupTime} → {endDisplay}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Titik ambil & rute OSRM</span>
-                <span className="font-semibold">
-                  {selectedItem.routeQuote.destinationName} ({selectedItem.routeQuote.distanceKm} km)
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total sewa (termasuk antar)</span>
-                <span className="font-mono font-semibold">
-                  {formatRp(selectedItem.price.rentalTotal)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>DP 30% dibayar sekarang</span>
-                <span className="font-mono font-semibold">
-                  {formatRp(selectedItem.price.dpAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Deposit escrow lepas kunci (dikembalikan)</span>
-                <span className="font-mono font-semibold">
-                  {formatRp(selectedItem.price.depositAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-[#062b8a]/20 text-sm font-semibold">
-                <span>Total dibayar via Gateway sekarang</span>
-                <span className="font-mono">{formatRp(selectedItem.price.totalDueNow)}</span>
-              </div>
-            </div>
-
-            <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-1">Nama Lengkap Penyewa</label>
-                  <input
-                    required
-                    value={renterName}
-                    onChange={(e) => setRenterName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-white border border-[#062b8a]/25 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1">Nomor WhatsApp Aktif</label>
-                  <input
-                    required
-                    value={renterPhone}
-                    onChange={(e) => setRenterPhone(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-white border border-[#062b8a]/25 text-sm font-mono"
-                  />
-                </div>
-              </div>
-
+        {/* ================================================================= */}
+        {/* TAB: HOME (Batch 1 Sheets 2 & 3)                                  */}
+        {/* ================================================================= */}
+        {activeTab === 'home' && (
+          <div className="space-y-7">
+            {/* Greeting + Search Pill (Batch 1 Sheet 3) */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <label className="block text-xs font-semibold mb-1">Email (Cadangan Voucher)</label>
-                <input
-                  required
-                  type="email"
-                  value={renterEmail}
-                  onChange={(e) => setRenterEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-white border border-[#062b8a]/25 text-sm"
-                />
+                <p className="text-xs font-bold text-[#FF5500] uppercase tracking-wider">
+                  Halo, {account.loggedIn ? account.name.split(' ')[0] : 'Traveler'} •{' '}
+                  {activeProvince?.name || 'DI Yogyakarta'}
+                </p>
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0D0D0D] mt-0.5">
+                  {lang === 'en'
+                    ? 'Drive Around Jogja Without Surprises'
+                    : 'Sewa Mobil di Jogja, Tarif Final & Tanpa Ribet'}
+                </h1>
               </div>
 
-              {/* KTP + SIM A + Tesseract OCR Pre-check ONLY for Lepas Kunci (FR-REN-04 & Bab 9) */}
-              {mode === 'LEPAS_KUNCI' && (
-                <div className="rounded-xl border border-[#062b8a]/25 p-4 space-y-3 bg-white">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold flex items-center gap-1.5">
-                      <ScanText className="w-4 h-4" />
-                      Verifikasi KTP & SIM A (Pre-Check Tesseract OCR)
-                    </span>
-                    <label className="inline-flex items-center gap-1.5 text-[11px] text-[#3a5aa8] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={simulateBlurOcr}
-                        onChange={(e) => setSimulateBlurOcr(e.target.checked)}
-                      />
-                      Simulasi foto buram
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <div>
-                      <label className="block text-[11px] font-medium mb-1">Nomor KTP (NIK)</label>
-                      <input
-                        required
-                        value={ktpNumber}
-                        onChange={(e) => setKtpNumber(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-medium mb-1">Nomor SIM A</label>
-                      <input
-                        required
-                        value={simNumber}
-                        onChange={(e) => setSimNumber(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-medium mb-1">Berlaku Hingga</label>
-                      <input
-                        type="date"
-                        required
-                        value={simExpiry}
-                        onChange={(e) => setSimExpiry(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded bg-[#faf7f0] border border-[#062b8a]/20 text-xs font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="relative w-full md:w-96">
+                <div className="h-12 rounded-full bg-white border border-black/15 px-4 flex items-center gap-2.5 shadow-sm focus-within:border-[#FF5500]">
+                  <Search className="w-4 h-4 text-[#FF5500] shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onFocus={() => setShowSuggestions(true)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setShowSuggestions(false);
+                        setActiveTab('search');
+                      }
+                    }}
+                    placeholder="Cari Toyota Avanza, Brio, Stasiun Tugu..."
+                    className="w-full bg-transparent text-xs font-semibold text-[#0D0D0D] focus:outline-none"
+                  />
+                  {searchQuery && (
                     <button
                       type="button"
-                      onClick={handleRunOcr}
-                      disabled={ocrLoading}
-                      className="px-3 py-1.5 rounded-lg bg-[#e6dbc7] text-[#062b8a] text-xs font-semibold hover:bg-[#ddd0b9] cursor-pointer"
+                      onClick={() => setSearchQuery('')}
+                      className="text-[#6B7280] hover:text-[#0D0D0D] cursor-pointer"
                     >
-                      {ocrLoading ? 'Memindai dengan Tesseract...' : 'Jalankan Pre-Check OCR'}
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                    {ocrResult && (
-                      <span
-                        className={`text-xs font-medium inline-flex items-center gap-1 ${
-                          ocrResult.needsManualReview ? 'text-amber-700' : 'text-emerald-700'
-                        }`}
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Akurasi {Math.round(ocrResult.confidence * 100)}% —{' '}
-                        {ocrResult.needsManualReview
-                          ? 'Masuk antrean verifikasi manual Admin (FR-ADM-09)'
-                          : `Terbaca: ${ocrResult.extractedName}`}
-                      </span>
-                    )}
-                  </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setFilterModalOpen(true)}
+                    aria-label="Buka Filter"
+                    className="w-8 h-8 rounded-full bg-[#F7F7F8] flex items-center justify-center shrink-0 hover:bg-[#FFF2EB] cursor-pointer"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#0D0D0D]" />
+                  </button>
+                </div>
 
-                  {/* Mandatory Explicit GPS Tracking Consent (FR-REN-12) */}
-                  <label className="flex items-start gap-2.5 pt-2 border-t border-[#062b8a]/15 text-xs cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={gpsConsent}
-                      onChange={(e) => setGpsConsent(e.target.checked)}
-                      className="mt-0.5"
-                    />
-                    <span>
-                      Saya menyetujui bahwa unit lepas kunci ini dilengkapi{' '}
-                      <strong>pelacak GPS Traccar</strong> yang hanya aktif selama masa sewa untuk
-                      keamanan unit & geofence wilayah DIY (FR-REN-12).
+                {/* Autocomplete Suggestions (Batch 1 Sheet 2) */}
+                {showSuggestions && (
+                  <div className="absolute left-0 right-0 top-14 z-30 rounded-2xl bg-white border border-black/10 shadow-xl p-2 space-y-1">
+                    <div className="px-3 py-1 flex items-center justify-between text-[10px] font-bold uppercase text-[#6B7280]">
+                      <span>Rekomendasi Pencarian</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowSuggestions(false)}
+                        className="text-[#FF5500] cursor-pointer"
+                      >
+                        Tutup
+                      </button>
+                    </div>
+                    {autocompleteMatches.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery(m.includes('YIA') || m.includes('Tugu') || m.includes('Malioboro') ? '' : m);
+                          if (m.includes('YIA')) setPickupPointId('pp-diy-yia');
+                          if (m.includes('Tugu')) setPickupPointId('pp-diy-tugu');
+                          if (m.includes('Malioboro')) setPickupPointId('pp-diy-malioboro');
+                          setShowSuggestions(false);
+                          setActiveTab('search');
+                        }}
+                        className="w-full px-3 py-2 rounded-xl hover:bg-[#F7F7F8] flex items-center gap-2 text-xs font-semibold text-[#0D0D0D] text-left cursor-pointer"
+                      >
+                        <Search className="w-3.5 h-3.5 text-[#6B7280]" />
+                        <span>{m}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Hero Promo Banner Card matching Batch 1 Sheet 3 in White/Black/Bright Orange */}
+            <div className="rounded-3xl bg-white border border-black/10 p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center shadow-sm">
+              <div className="lg:col-span-6 space-y-4">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF2EB] text-[#FF5500] text-xs font-extrabold">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  DI Yogyakarta Aktif • Siap Ekspansi Nasional
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#0D0D0D] leading-[1.12]">
+                  Keliling Jogja <span className="text-[#FF5500]">Lebih Nyaman</span> Dengan Harga
+                  Final
+                </h2>
+                <p className="text-sm text-[#6B7280] leading-relaxed max-w-lg">
+                  Pilih durasi fleksibel 6, 12, atau 24 jam. Gratis antar Bandara YIA & Stasiun Tugu
+                  untuk mitra zona inti, dilengkapi kalender anti-double-book dan pre-check OCR.
+                </p>
+                <div className="flex items-center gap-3 flex-nowrap overflow-x-auto no-scrollbar pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('search')}
+                    className="h-12 px-5 rounded-full bg-[#0D0D0D] hover:bg-[#1a1a1a] text-white text-xs font-bold flex items-center gap-3 whitespace-nowrap shrink-0 cursor-pointer"
+                  >
+                    <span>Jelajahi Armada ({rawItems.length})</span>
+                    <span className="w-7 h-7 rounded-full bg-[#FF5500] text-white flex items-center justify-center">
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </span>
-                  </label>
+                  </button>
+                  <Link
+                    href="/booking/MVO-DIY-2601"
+                    className="h-12 px-5 rounded-full border border-black/15 bg-[#F7F7F8] hover:border-[#FF5500] text-[#0D0D0D] text-xs font-bold flex items-center whitespace-nowrap shrink-0"
+                  >
+                    Cek Sampel E-Voucher
+                  </Link>
+                </div>
+              </div>
+
+              <div className="lg:col-span-6 relative h-56 sm:h-72 rounded-2xl overflow-hidden bg-[#0D0D0D]">
+                <Image
+                  src="/images/hero-jogja.jpg"
+                  alt="Muvo Car Rental Yogyakarta"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+                <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-white/95 backdrop-blur-md p-3 flex items-center justify-between gap-3 border border-black/10">
+                  <div>
+                    <p className="text-[11px] font-bold text-[#FF5500]">HOT ROUTE JOGJA</p>
+                    <p className="text-xs font-extrabold text-[#0D0D0D]">
+                      Bandara YIA • Stasiun Tugu • Malioboro
+                    </p>
+                  </div>
+                  <span className="px-3 py-1.5 rounded-full bg-[#0D0D0D] text-white text-[11px] font-bold whitespace-nowrap">
+                    Mulai Rp 185rb
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Categories (Batch 1 Sheet 3) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-[#0D0D0D]">Kategori Populer</h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategory('ALL');
+                    setActiveTab('search');
+                  }}
+                  className="text-xs font-bold text-[#FF5500] hover:underline cursor-pointer whitespace-nowrap"
+                >
+                  Lihat Semua →
+                </button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  {
+                    id: 'CITY_CAR' as const,
+                    title: 'City Car',
+                    sub: 'Brio, Agya • Hemat Kota',
+                    img: '/images/car-city.jpg',
+                  },
+                  {
+                    id: 'MPV' as const,
+                    title: 'MPV Keluarga',
+                    sub: 'Avanza, Xpander • 7 Kursi',
+                    img: '/images/car-mpv.jpg',
+                  },
+                  {
+                    id: 'EXECUTIVE_MPV' as const,
+                    title: 'Executive MPV',
+                    sub: 'Innova Zenix • VIP Bisnis',
+                    img: '/images/car-executive.jpg',
+                  },
+                  {
+                    id: 'COMMUTER' as const,
+                    title: 'Commuter',
+                    sub: 'Hiace 14 Kursi • Rombongan',
+                    img: '/images/hero-jogja.jpg',
+                  },
+                ].map((cat) => {
+                  const count = rawItems.filter((i) => i.vehicle.category === cat.id).length;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setCategory(cat.id);
+                        setActiveTab('search');
+                      }}
+                      className="rounded-2xl bg-white border border-black/10 hover:border-[#FF5500] p-3 text-left transition-all cursor-pointer group"
+                    >
+                      <div className="relative h-24 w-full rounded-xl overflow-hidden bg-[#F7F7F8] mb-2.5">
+                        <Image
+                          src={cat.img}
+                          alt={cat.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+                      <p className="text-sm font-extrabold text-[#0D0D0D]">{cat.title}</p>
+                      <p className="text-[11px] text-[#6B7280] truncate">{cat.sub}</p>
+                      <p className="text-[11px] font-bold text-[#FF5500] mt-1">{count} Unit Siap</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Recommended Vehicles Strip (Batch 1 Sheet 3) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-[#0D0D0D]">
+                  Rekomendasi Terbaik Hari Ini
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('search')}
+                  className="text-xs font-bold text-[#FF5500] hover:underline cursor-pointer whitespace-nowrap"
+                >
+                  Semua Armada →
+                </button>
+              </div>
+
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((k) => (
+                    <div key={k} className="h-72 rounded-3xl bg-white animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {rawItems.slice(0, 3).map((item) => {
+                    const isFav = wishlistIds.includes(item.vehicle.id);
+                    const isCmp = compareIds.includes(item.vehicle.id);
+                    return (
+                      <div
+                        key={item.vehicle.id}
+                        className="rounded-3xl bg-white border border-black/10 hover:border-[#FF5500] overflow-hidden flex flex-col justify-between transition-colors shadow-sm"
+                      >
+                        <div>
+                          <div className="relative h-44 bg-[#F7F7F8]">
+                            <Image
+                              src={item.vehicle.photo}
+                              alt={item.vehicle.brandModel}
+                              fill
+                              className="object-cover"
+                            />
+                            <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-[#0D0D0D] text-white text-[10px] font-bold">
+                              {categoryLabel(item.vehicle.category, lang)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => toggleWishlist(item.vehicle.id)}
+                              aria-label="Simpan Wishlist"
+                              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 flex items-center justify-center shadow cursor-pointer"
+                            >
+                              <Heart
+                                className={`w-4 h-4 ${
+                                  isFav ? 'fill-[#FF5500] text-[#FF5500]' : 'text-[#0D0D0D]'
+                                }`}
+                              />
+                            </button>
+                          </div>
+
+                          <div className="p-4 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h4 className="text-base font-extrabold text-[#0D0D0D]">
+                                  {item.vehicle.brandModel}
+                                </h4>
+                                <p className="text-[11px] text-[#6B7280]">
+                                  {item.vehicle.year} • {item.vehicle.transmission} •{' '}
+                                  {item.vehicle.seats} Kursi
+                                </p>
+                              </div>
+                              <span className="inline-flex items-center gap-1 text-xs font-extrabold text-[#0D0D0D] shrink-0">
+                                <Star className="w-3.5 h-3.5 fill-[#FF5500] text-[#FF5500]" />
+                                {item.partner.rating.toFixed(1)}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setPartnerProfile(item.partner)}
+                              className="text-[11px] font-semibold text-[#6B7280] hover:text-[#FF5500] flex items-center gap-1 cursor-pointer"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5 text-[#FF5500]" />
+                              {item.partner.businessName} •{' '}
+                              {item.routeQuote.isFreeZone ? 'Gratis Antar' : `${item.routeQuote.distanceKm} km`}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="px-4 pb-4 pt-2 border-t border-black/5 flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-lg font-extrabold text-[#0D0D0D] tabular-nums">
+                              {item.price ? formatRp(item.price.rentalTotal) : 'Cek Paket'}
+                            </p>
+                            <p className="text-[10px] font-semibold text-[#FF5500]">
+                              Final {duration} Jam
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => toggleCompare(item.vehicle.id)}
+                              className={`h-9 px-2.5 rounded-full border text-xs font-bold cursor-pointer whitespace-nowrap ${
+                                isCmp
+                                  ? 'border-[#FF5500] bg-[#FFF2EB] text-[#FF5500]'
+                                  : 'border-black/15 bg-white text-[#0D0D0D]'
+                              }`}
+                            >
+                              {isCmp ? '✓ VS' : '+ VS'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDetailItem(item)}
+                              className="h-9 px-4 rounded-full bg-[#0D0D0D] hover:bg-[#FF5500] text-white text-xs font-bold cursor-pointer whitespace-nowrap transition-colors"
+                            >
+                              Detail
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
+            </div>
 
-              {/* Payment Gateway Choice */}
-              <div>
-                <label className="block text-xs font-semibold mb-1.5">
-                  Metode Pembayaran DP & Escrow
-                </label>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {(['MIDTRANS', 'XENDIT'] as const).map((gw) => (
+            {/* Popular Brands, Trending Jogja & Ask Muvo Assistant (Batch 1 Sheet 2) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-7 rounded-3xl bg-white border border-black/10 p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-extrabold text-[#0D0D0D]">Merek & Rute Populer</h3>
+                  <span className="text-[11px] font-bold text-[#FF5500]">Jogja Trending</span>
+                </div>
+
+                <div className="flex gap-2 overflow-x-auto no-scrollbar flex-nowrap">
+                  {brands.map(([brand, count]) => (
                     <button
-                      key={gw}
+                      key={brand}
                       type="button"
-                      onClick={() => setGateway(gw)}
-                      className={`py-2.5 px-3 rounded-lg border text-xs font-semibold cursor-pointer ${
-                        gateway === gw
-                          ? 'bg-[#062b8a] text-[#e6dbc7] border-[#062b8a]'
-                          : 'bg-white border-[#062b8a]/25 text-[#062b8a]'
-                      }`}
+                      onClick={() => {
+                        setSearchQuery(brand);
+                        setActiveTab('search');
+                      }}
+                      className="px-4 py-2 rounded-2xl bg-[#F7F7F8] hover:bg-[#FFF2EB] border border-black/10 text-xs font-bold text-[#0D0D0D] whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5"
                     >
-                      {gw === 'MIDTRANS' ? 'Midtrans (QRIS / GoPay / VA)' : 'Xendit (VA / OVO / Kartu)'}
+                      <CarFront className="w-3.5 h-3.5 text-[#FF5500]" />
+                      <span>{brand}</span>
+                      <span className="text-[#6B7280]">({count})</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="divide-y divide-black/5">
+                  {[
+                    {
+                      label: 'Sewa Avanza / Xpander Dekat Stasiun Tugu',
+                      hub: 'pp-diy-tugu',
+                      cat: 'MPV' as const,
+                    },
+                    {
+                      label: 'Ambil Langsung di Bandara YIA Kulon Progo',
+                      hub: 'pp-diy-yia',
+                      cat: 'ALL' as const,
+                    },
+                    {
+                      label: 'City Car Matic Hemat Area Malioboro & UGM',
+                      hub: 'pp-diy-malioboro',
+                      cat: 'CITY_CAR' as const,
+                    },
+                  ].map((tr) => (
+                    <button
+                      key={tr.label}
+                      type="button"
+                      onClick={() => {
+                        setPickupPointId(tr.hub);
+                        setCategory(tr.cat);
+                        setActiveTab('search');
+                      }}
+                      className="w-full py-2.5 flex items-center justify-between text-xs font-semibold text-[#0D0D0D] hover:text-[#FF5500] cursor-pointer text-left"
+                    >
+                      <span className="flex items-center gap-2">
+                        <TrendingUp className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                        <span>{tr.label}</span>
+                      </span>
+                      <span className="text-[#6B7280]">→</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {checkoutError && (
-                <div className="p-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-xs font-medium">
-                  {checkoutError}
+              {/* Asisten Muvo Card matching "Not sure what you're looking for?" (Batch 1 Sheet 2) */}
+              <div className="lg:col-span-5 rounded-3xl bg-[#0D0D0D] text-white p-5 flex flex-col justify-between gap-4">
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[#FF5500] text-[11px] font-bold">
+                    <Bot className="w-3.5 h-3.5" /> Asisten Rekomendasi Muvo
+                  </span>
+                  <h3 className="text-xl font-extrabold leading-snug">
+                    Bingung Pilih Mobil yang Pas untuk Rute Jogjamu?
+                  </h3>
+                  <p className="text-xs text-white/70">
+                    Pilih kebutuhan perjalananmu dan Muvo akan pilihkan paket paling hemat.
+                  </p>
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={checkoutSubmitting}
-                className="w-full py-3.5 rounded-xl bg-[#062b8a] text-[#e6dbc7] text-sm font-semibold hover:bg-[#041f66] cursor-pointer flex items-center justify-center gap-2"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                {checkoutSubmitting
-                  ? 'Mengunci Kalender & Memproses DP...'
-                  : `Bayar DP ${formatRp(selectedItem.price.totalDueNow)} & Kunci Unit`}
-              </button>
-            </form>
+                <div className="flex gap-2 overflow-x-auto no-scrollbar flex-nowrap">
+                  <button
+                    type="button"
+                    onClick={() => handleApplyAiPreset('family')}
+                    className="px-3.5 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer"
+                  >
+                    Wisata Keluarga (7 Kursi)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyAiPreset('city')}
+                    className="px-3.5 py-2 rounded-full bg-white text-[#0D0D0D] hover:bg-[#FFF2EB] text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer"
+                  >
+                    Hemat Dalam Kota
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyAiPreset('vip')}
+                    className="px-3.5 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer"
+                  >
+                    Jemput VIP Bandara
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Multi-Province Infrastructure Strip */}
+            <div className="rounded-3xl bg-white border border-black/10 p-5 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-extrabold text-[#0D0D0D]">
+                    Jaringan Multi-Provinsi Muvo
+                  </h3>
+                  <p className="text-xs text-[#6B7280]">
+                    Fokus utama di DI Yogyakarta, dengan arsitektur siap aktif di provinsi strategis
+                    berikutnya.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {provinces.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setProvinceSlug(p.slug);
+                      setActiveTab('search');
+                    }}
+                    className={`rounded-2xl p-4 border text-left transition-colors cursor-pointer ${
+                      p.slug === provinceSlug
+                        ? 'border-[#FF5500] bg-[#FFF2EB]/60'
+                        : 'border-black/10 bg-[#F7F7F8] hover:border-[#FF5500]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-mono font-bold text-[#6B7280]">{p.code}</span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                          p.status === 'ACTIVE'
+                            ? 'bg-[#0D0D0D] text-white'
+                            : 'bg-white border border-black/15 text-[#6B7280]'
+                        }`}
+                      >
+                        {p.status === 'ACTIVE' ? 'AKTIF' : 'SEGERA V2'}
+                      </span>
+                    </div>
+                    <p className="text-sm font-extrabold text-[#0D0D0D]">{p.name}</p>
+                    <p className="text-[11px] text-[#6B7280] truncate mt-0.5">
+                      {p.popularCorridors.join(', ')}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB: SEARCH RESULTS (Batch 1 Sheets 1 & 2)                        */}
+        {/* ================================================================= */}
+        {activeTab === 'search' && (
+          <div className="space-y-4">
+            {/* Search input + 1-line category pills */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+              <div className="h-11 flex-1 rounded-full bg-white border border-black/15 px-4 flex items-center gap-2 focus-within:border-[#FF5500]">
+                <Search className="w-4 h-4 text-[#FF5500] shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter nama mobil, merek, atau mitra..."
+                  className="w-full bg-transparent text-xs font-semibold text-[#0D0D0D] focus:outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="text-[#6B7280] hover:text-[#0D0D0D] cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 flex-nowrap overflow-x-auto no-scrollbar">
+                <select
+                  aria-label="Urutkan"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="h-10 px-3.5 rounded-full bg-white border border-black/15 text-xs font-bold text-[#0D0D0D] focus:outline-none cursor-pointer whitespace-nowrap"
+                >
+                  <option value="recommended">Urut: Paling Sesuai</option>
+                  <option value="price_asc">Harga Terendah</option>
+                  <option value="price_desc">Harga Tertinggi</option>
+                  <option value="rating_desc">Rating Tertinggi</option>
+                  <option value="nearest">Terdekat OSRM</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setFilterModalOpen(true)}
+                  className="h-10 px-4 rounded-full bg-[#0D0D0D] text-white text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF5500]" />
+                  <span>Filter Lanjutan</span>
+                </button>
+              </div>
+            </div>
+
+            {aiTip && (
+              <div className="rounded-2xl bg-[#FFF2EB] border border-[#FF5500]/30 px-4 py-2.5 flex items-center justify-between gap-3 text-xs font-semibold text-[#0D0D0D]">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#FF5500] shrink-0" />
+                  {aiTip}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAiTip(null)}
+                  className="text-[#FF5500] font-bold cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            )}
+
+            {/* 1-Line Category & Active Filter Chips (Batch 1 Sheet 1) */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap pb-1">
+              {[
+                { id: 'ALL' as const, label: 'Semua' },
+                { id: 'CITY_CAR' as const, label: 'City Car' },
+                { id: 'MPV' as const, label: 'MPV Keluarga' },
+                { id: 'EXECUTIVE_MPV' as const, label: 'Executive MPV' },
+                { id: 'COMMUTER' as const, label: 'Commuter' },
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setCategory(cat.id)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer ${
+                    category === cat.id
+                      ? 'bg-[#0D0D0D] text-white'
+                      : 'bg-white border border-black/10 text-[#0D0D0D] hover:border-[#FF5500]'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+              {transmission !== 'ALL' && (
+                <button
+                  type="button"
+                  onClick={() => setTransmission('ALL')}
+                  className="px-3 py-1.5 rounded-full bg-[#FFF2EB] border border-[#FF5500]/30 text-[#FF5500] text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  {transmission} ×
+                </button>
+              )}
+              {freeDeliveryOnly && (
+                <button
+                  type="button"
+                  onClick={() => setFreeDeliveryOnly(false)}
+                  className="px-3 py-1.5 rounded-full bg-[#FFF2EB] border border-[#FF5500]/30 text-[#FF5500] text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  Gratis Antar ×
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-[#6B7280]">
+              <span className="font-bold text-[#0D0D0D]">
+                {filteredItems.length} Mobil Ditemukan
+              </span>
+              {compareIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setCompareModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500] text-white font-bold cursor-pointer"
+                >
+                  <GitCompareArrows className="w-3.5 h-3.5" />
+                  Bandingkan ({compareIds.length}/3)
+                </button>
+              )}
+            </div>
+
+            {filteredItems.length === 0 ? (
+              <div className="rounded-3xl bg-white border border-black/10 p-10 text-center space-y-3">
+                <p className="text-base font-extrabold text-[#0D0D0D]">
+                  Tidak ada mobil yang cocok dengan filter ini
+                </p>
+                <p className="text-xs text-[#6B7280]">
+                  Coba reset beberapa filter atau ubah durasi sewa menjadi 12 / 24 jam.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="px-5 py-2.5 rounded-full bg-[#0D0D0D] text-white text-xs font-bold cursor-pointer"
+                >
+                  Reset Semua Filter
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredItems.map((item) => {
+                  const isFav = wishlistIds.includes(item.vehicle.id);
+                  const isCmp = compareIds.includes(item.vehicle.id);
+                  const bookable = item.rateAvailable && item.calendarAvailable;
+
+                  return (
+                    <article
+                      key={item.vehicle.id}
+                      className="rounded-3xl bg-white border border-black/10 hover:border-[#FF5500] p-4 flex flex-col justify-between gap-4 transition-colors shadow-sm"
+                    >
+                      <div className="flex gap-4">
+                        <div className="relative w-36 sm:w-44 h-28 rounded-2xl overflow-hidden bg-[#F7F7F8] shrink-0">
+                          <Image
+                            src={item.vehicle.photo}
+                            alt={item.vehicle.brandModel}
+                            fill
+                            className="object-cover"
+                          />
+                          <span
+                            className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                              bookable
+                                ? 'bg-[#0D0D0D] text-white'
+                                : 'bg-red-600 text-white'
+                            }`}
+                          >
+                            {bookable ? 'TERSEDIA' : 'PENUH'}
+                          </span>
+                        </div>
+
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="text-base font-extrabold text-[#0D0D0D] truncate">
+                                {item.vehicle.brandModel}
+                              </h3>
+                              <button
+                                type="button"
+                                onClick={() => toggleWishlist(item.vehicle.id)}
+                                aria-label="Simpan Wishlist"
+                                className="cursor-pointer shrink-0"
+                              >
+                                <Heart
+                                  className={`w-4 h-4 ${
+                                    isFav ? 'fill-[#FF5500] text-[#FF5500]' : 'text-[#0D0D0D]/50'
+                                  }`}
+                                />
+                              </button>
+                            </div>
+                            <p className="text-[11px] text-[#6B7280] mt-0.5">
+                              {item.vehicle.year} • {item.vehicle.transmission} •{' '}
+                              {item.vehicle.seats} Kursi • {item.vehicle.fuelType}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setPartnerProfile(item.partner)}
+                              className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-[#0D0D0D] hover:text-[#FF5500] cursor-pointer"
+                            >
+                              <Star className="w-3.5 h-3.5 fill-[#FF5500] text-[#FF5500]" />
+                              <span>{item.partner.rating.toFixed(1)}</span>
+                              <span className="text-[#6B7280] truncate">
+                                • {item.partner.businessName}
+                              </span>
+                            </button>
+                          </div>
+
+                          <div className="flex items-baseline justify-between gap-2 pt-2">
+                            <div>
+                              <span className="text-lg font-extrabold text-[#0D0D0D] tabular-nums">
+                                {item.price ? formatRp(item.price.rentalTotal) : 'Cek Opsi'}
+                              </span>
+                              <span className="text-[10px] text-[#6B7280] ml-1">
+                                / {duration}J
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-bold text-[#FF5500] whitespace-nowrap">
+                              {item.routeQuote.isFreeZone
+                                ? 'Gratis Antar'
+                                : `+Ongkir ${formatRp(item.routeQuote.deliveryFee)}`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {!bookable && item.conflictReason && (
+                        <p className="rounded-xl bg-red-50 px-3 py-2 text-[11px] font-semibold text-red-700">
+                          {item.conflictReason}
+                        </p>
+                      )}
+
+                      <div className="pt-2.5 border-t border-black/5 flex items-center justify-between gap-2 flex-nowrap">
+                        <div className="flex items-center gap-2 text-[11px] text-[#6B7280]">
+                          {item.vehicle.hasGpsTracker && (
+                            <span className="inline-flex items-center gap-1 font-semibold text-[#0D0D0D]">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#FF5500]" />
+                              GPS Ready
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 flex-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => toggleCompare(item.vehicle.id)}
+                            className={`h-9 px-3 rounded-full border text-xs font-bold whitespace-nowrap cursor-pointer ${
+                              isCmp
+                                ? 'border-[#FF5500] bg-[#FFF2EB] text-[#FF5500]'
+                                : 'border-black/15 bg-white text-[#0D0D0D]'
+                            }`}
+                          >
+                            {isCmp ? '✓ Bandingkan' : '+ Bandingkan'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDetailItem(item)}
+                            className="h-9 px-3.5 rounded-full border border-black/15 bg-[#F7F7F8] hover:border-[#FF5500] text-xs font-bold text-[#0D0D0D] whitespace-nowrap cursor-pointer"
+                          >
+                            Detail
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!bookable}
+                            onClick={() => setBookingItem(item)}
+                            className="h-9 px-4 rounded-full bg-[#0D0D0D] hover:bg-[#FF5500] disabled:opacity-40 text-white text-xs font-bold whitespace-nowrap cursor-pointer transition-colors"
+                          >
+                            Sewa
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB: WISHLIST, BOOKINGS & PROFILE                                 */}
+        {/* ================================================================= */}
+        {activeTab === 'wishlist' && (
+          <WishlistHubView
+            wishlistedItems={wishlistedItems}
+            savedSearches={savedSearches}
+            onToggleWishlist={toggleWishlist}
+            onSelectVehicle={(item) => setDetailItem(item)}
+            onApplySavedSearch={(s) => {
+              setProvinceSlug(s.provinceSlug);
+              setMode(s.mode);
+              setDuration(s.duration);
+              setPackageType(s.mode === 'LEPAS_KUNCI' ? 'UNIT_ONLY' : 'WITH_DRIVER');
+              setCategory(s.category as VehicleCategory);
+              setActiveTab('search');
+            }}
+            onToggleSavedSearch={(id) =>
+              setSavedSearches((prev) =>
+                prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
+              )
+            }
+          />
+        )}
+
+        {activeTab === 'bookings' && (
+          <BookingsGarageHubView sessionBookings={sessionBookings} />
+        )}
+
+        {activeTab === 'profile' && (
+          <ProfileHubView
+            account={account}
+            wishlistCount={wishlistIds.length}
+            bookingCount={sessionBookings.length + 2}
+            notifications={notifications}
+            messages={INITIAL_MESSAGES}
+            onMarkNotifsRead={() =>
+              setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })))
+            }
+            onOpenAuth={() => setAuthModalOpen(true)}
+            onLogout={() =>
+              setAccount((prev) => ({
+                ...prev,
+                loggedIn: false,
+              }))
+            }
+            onJumpToPromoSearch={() => {
+              setFreeDeliveryOnly(true);
+              setActiveTab('search');
+            }}
+          />
+        )}
+      </main>
 
       <Footer />
+
+      {/* Modals */}
+      <UserAuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        account={account}
+        onAuthSuccess={(next) => setAccount(next)}
+        lang={lang}
+      />
+
+      <FilterSheetModal
+        open={filterModalOpen}
+        onClose={() => {
+          setFilterModalOpen(false);
+          setActiveTab('search');
+        }}
+        sortBy={sortBy}
+        onChangeSort={setSortBy}
+        duration={duration}
+        onChangeDuration={setDuration}
+        mode={mode}
+        onChangeMode={setMode}
+        packageType={packageType}
+        onChangePackage={setPackageType}
+        pickupPointId={pickupPointId}
+        onChangePickup={setPickupPointId}
+        pickupPoints={pickupPoints}
+        category={category}
+        onChangeCategory={setCategory}
+        transmission={transmission}
+        onChangeTransmission={setTransmission}
+        minSeats={minSeats}
+        onChangeMinSeats={setMinSeats}
+        maxPrice={maxPrice}
+        onChangeMaxPrice={setMaxPrice}
+        freeDeliveryOnly={freeDeliveryOnly}
+        onChangeFreeDelivery={setFreeDeliveryOnly}
+        gpsOnly={gpsOnly}
+        onChangeGpsOnly={setGpsOnly}
+        onReset={handleResetFilters}
+        resultCount={filteredItems.length}
+      />
+
+      <CompareDrawerModal
+        open={compareModalOpen}
+        onClose={() => setCompareModalOpen(false)}
+        items={compareItems}
+        onRemove={(id) => setCompareIds((prev) => prev.filter((x) => x !== id))}
+        onSelectForBooking={(item) => setBookingItem(item)}
+        lang={lang}
+      />
+
+      <PartnerProfileModal
+        partner={partnerProfile}
+        partnerVehicles={
+          partnerProfile
+            ? rawItems.filter((i) => i.partner.id === partnerProfile.id)
+            : []
+        }
+        onClose={() => setPartnerProfile(null)}
+        onSelectVehicle={(item) => setDetailItem(item)}
+      />
+
+      <VehicleDetailModal
+        item={detailItem}
+        onClose={() => setDetailItem(null)}
+        duration={duration}
+        mode={mode}
+        packageType={packageType}
+        isWishlisted={detailItem ? wishlistIds.includes(detailItem.vehicle.id) : false}
+        onToggleWishlist={toggleWishlist}
+        isCompared={detailItem ? compareIds.includes(detailItem.vehicle.id) : false}
+        onToggleCompare={toggleCompare}
+        onOpenPartner={(p) => {
+          setDetailItem(null);
+          setPartnerProfile(p);
+        }}
+        onProceedToBooking={(item) => {
+          setDetailItem(null);
+          setBookingItem(item);
+        }}
+        lang={lang}
+      />
+
+      <BookingFlowModal
+        item={bookingItem}
+        onClose={() => setBookingItem(null)}
+        provinceId={activeProvince?.id || 'prov-diy'}
+        pickupPointId={pickupPointId}
+        initialStartDate={startDate}
+        initialStartTime={startTime}
+        duration={duration}
+        mode={mode}
+        packageType={packageType}
+        account={account}
+        onBookingCreated={(bkg) => {
+          setSessionBookings((prev) => [bkg, ...prev]);
+        }}
+      />
     </div>
   );
 }

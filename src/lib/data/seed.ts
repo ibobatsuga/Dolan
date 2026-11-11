@@ -215,9 +215,9 @@ export const SEED_VEHICLES: VehicleListing[] = [
       overtimePerHour: 45000,
       depositAmount: 400000,
       termsLepasKunci:
-        'KTP + SIM A terverifikasi Dolan. Batas wilayah pakai: DIY + Magelang + Klaten/Solo.',
+        'KTP + SIM A terverifikasi Muvo. Batas wilayah pakai: DIY + Magelang + Klaten/Solo.',
       termsLepasKunciEn:
-        'Verified ID + International License via Dolan. Allowed zone: DIY + Borobudur/Magelang + Solo.',
+        'Verified ID + International License via Muvo. Allowed zone: DIY + Borobudur/Magelang + Solo.',
       termsDenganSopir:
         'Sopir berpengalaman rute keluarga & wisata sunrise Merapi/Borobudur.',
       termsDenganSopirEn:
@@ -468,7 +468,7 @@ export const SEED_BLOCKS: AvailabilityBlock[] = [
     startAt: isoAtHour(0, 7, 0),
     endAt: isoAtHour(0, 13, 0),
     blockType: 'BOOKING',
-    referenceId: 'DLN-DIY-2601',
+    referenceId: 'MVO-DIY-2601',
     reason: 'Booking 6 jam selesai 13:00',
   },
   {
@@ -477,7 +477,7 @@ export const SEED_BLOCKS: AvailabilityBlock[] = [
     startAt: isoAtHour(0, 13, 0),
     endAt: isoAtHour(0, 13, 30),
     blockType: 'POST_6H_BUFFER',
-    referenceId: 'DLN-DIY-2601',
+    referenceId: 'MVO-DIY-2601',
     reason: 'Paruh jam cuci & cek pasca-booking 6 jam (FR-MIT-03)',
   },
   {
@@ -486,7 +486,7 @@ export const SEED_BLOCKS: AvailabilityBlock[] = [
     startAt: isoAtHour(0, 9, 0),
     endAt: isoAtHour(0, 21, 0),
     blockType: 'BOOKING',
-    referenceId: 'DLN-DIY-2602',
+    referenceId: 'MVO-DIY-2602',
     reason: 'Paket Full BBM + Sopir 12 jam (Wisata Merapi-Prambanan)',
   },
   {
@@ -502,7 +502,7 @@ export const SEED_BLOCKS: AvailabilityBlock[] = [
 export const SEED_ASSIGNMENTS: DriverAssignment[] = [
   {
     id: 'asg-1',
-    bookingId: 'DLN-DIY-2602',
+    bookingId: 'MVO-DIY-2602',
     driverId: 'drv-bagus',
     startAt: isoAtHour(0, 9, 0),
     endAt: isoAtHour(0, 21, 0),
@@ -514,7 +514,7 @@ export const SEED_ASSIGNMENTS: DriverAssignment[] = [
 export const SEED_BOOKINGS: Booking[] = [
   {
     id: 'bkg-2601',
-    code: 'DLN-DIY-2601',
+    code: 'MVO-DIY-2601',
     provinceId: 'prov-diy',
     renterId: 'usr-renter-1',
     renterName: 'Nadia Kusuma',
@@ -575,7 +575,7 @@ export const SEED_BOOKINGS: Booking[] = [
   },
   {
     id: 'bkg-2602',
-    code: 'DLN-DIY-2602',
+    code: 'MVO-DIY-2602',
     provinceId: 'prov-diy',
     renterId: 'usr-renter-2',
     renterName: 'Arif Wibowo',
@@ -686,7 +686,7 @@ export const SEED_LEDGER: PaymentLedgerEntry[] = [
   {
     id: 'ldg-1',
     bookingId: 'bkg-2601',
-    bookingCode: 'DLN-DIY-2601',
+    bookingCode: 'MVO-DIY-2601',
     provinceId: 'prov-diy',
     type: 'DP',
     amount: 58500,
@@ -694,13 +694,13 @@ export const SEED_LEDGER: PaymentLedgerEntry[] = [
     gatewayRef: 'MID-QRIS-99281',
     idempotencyKey: 'dp-bkg-2601-v1',
     reconciled: true,
-    reason: 'DP 30% booking DLN-DIY-2601',
+    reason: 'DP 30% booking MVO-DIY-2601',
     createdAt: isoAtHour(-1, 19, 16),
   },
   {
     id: 'ldg-2',
     bookingId: 'bkg-2601',
-    bookingCode: 'DLN-DIY-2601',
+    bookingCode: 'MVO-DIY-2601',
     provinceId: 'prov-diy',
     type: 'DEPOSIT_HOLD',
     amount: 300000,
@@ -714,7 +714,7 @@ export const SEED_LEDGER: PaymentLedgerEntry[] = [
   {
     id: 'ldg-3',
     bookingId: 'bkg-2602',
-    bookingCode: 'DLN-DIY-2602',
+    bookingCode: 'MVO-DIY-2602',
     provinceId: 'prov-diy',
     type: 'DP',
     amount: 250500,
@@ -730,7 +730,7 @@ export const SEED_LEDGER: PaymentLedgerEntry[] = [
 export const SEED_GPS_POSITIONS: GpsTelemetry[] = [
   {
     vehicleId: 'veh-brio-01',
-    bookingId: 'DLN-DIY-2601',
+    bookingId: 'MVO-DIY-2601',
     gpsDeviceId: 'TRACCAR-DIY-001',
     lat: -7.7524,
     lng: 110.4912,
@@ -741,7 +741,7 @@ export const SEED_GPS_POSITIONS: GpsTelemetry[] = [
   },
   {
     vehicleId: 'veh-avanza-02',
-    bookingId: 'DLN-DIY-2602',
+    bookingId: 'MVO-DIY-2602',
     gpsDeviceId: 'TRACCAR-DIY-002',
     lat: -7.6078,
     lng: 110.2039,
@@ -766,7 +766,7 @@ export const SEED_GEOFENCE_EVENTS: GeofenceEvent[] = [
   {
     id: 'geo-1',
     bookingId: 'bkg-2601',
-    bookingCode: 'DLN-DIY-2601',
+    bookingCode: 'MVO-DIY-2601',
     vehicleId: 'veh-brio-01',
     provinceId: 'prov-diy',
     eventType: 'OUT_OF_GEOFENCE',
@@ -781,7 +781,7 @@ export const SEED_DISPUTES: ClaimDispute[] = [
   {
     id: 'dsp-1',
     bookingId: 'bkg-2601',
-    bookingCode: 'DLN-DIY-2601',
+    bookingCode: 'MVO-DIY-2601',
     provinceId: 'prov-diy',
     filedByRole: 'PARTNER',
     category: 'OVERTIME',
@@ -796,7 +796,7 @@ export const SEED_DISPUTES: ClaimDispute[] = [
 export const SEED_NOTIFICATIONS: NotificationLog[] = [
   {
     id: 'ntf-1',
-    bookingCode: 'DLN-DIY-2601',
+    bookingCode: 'MVO-DIY-2601',
     channel: 'WHATSAPP_CLOUD_API',
     recipient: '+628129001122',
     template: 'booking_confirmed_voucher_id',
@@ -805,7 +805,7 @@ export const SEED_NOTIFICATIONS: NotificationLog[] = [
   },
   {
     id: 'ntf-2',
-    bookingCode: 'DLN-DIY-2602',
+    bookingCode: 'MVO-DIY-2602',
     channel: 'WHATSAPP_CLOUD_API',
     recipient: '+628157800101',
     template: 'driver_assignment_h0_id',

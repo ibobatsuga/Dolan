@@ -1,4 +1,4 @@
-// Dolan Car Rental Marketplace — Multi-Province Production Schema (PostgreSQL + Prisma)
+// Muvo Car Rental Marketplace — Multi-Province Production Schema (PostgreSQL + Prisma)
 // Supports PRD v0.3 (DIY Pilot + Multi-Province Expansion Ready: Jateng, Jatim, Bali, etc.)
 
 generator client {

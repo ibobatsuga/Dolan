@@ -236,7 +236,7 @@ export default function PartnerSaasPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `dolan-ledger-${partnerId}.csv`;
+    a.download = `muvo-ledger-${partnerId}.csv`;
     a.click();
   };
 

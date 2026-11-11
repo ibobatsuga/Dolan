@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
+  ArrowLeft,
   Calendar,
   Camera,
   CheckCircle2,
@@ -11,7 +12,6 @@ import {
   Fuel,
   Navigation,
   ShieldAlert,
-  ArrowLeft,
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -50,7 +50,6 @@ export default function BookingVoucherPage() {
   const [loading, setLoading] = useState(true);
   const [actionMsg, setActionMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  // Checklist form state
   const [stage, setStage] = useState<'PICKUP' | 'RETURN'>('RETURN');
   const [fuelPct, setFuelPct] = useState(75);
   const [odometerKm, setOdometerKm] = useState(24920);
@@ -156,59 +155,63 @@ export default function BookingVoucherPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e6dbc7] text-[#062b8a]">
+    <div className="min-h-screen flex flex-col bg-[#F7F7F8] text-[#0D0D0D]">
       <Navbar />
 
-      <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-8 space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline">
-            <ArrowLeft className="w-4 h-4" /> Kembali ke Pencarian
+      <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-5 pb-24 md:pb-12">
+        <div className="flex items-center justify-between gap-3 flex-nowrap">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0D0D0D] hover:text-[#FF5500] whitespace-nowrap shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" /> Kembali ke Muvo
           </Link>
-          <div className="flex gap-2 text-xs">
+          <div className="flex gap-2 text-xs shrink-0">
             <Link
-              href="/booking/DLN-DIY-2601"
-              className="px-3 py-1 rounded-md bg-[#faf7f0] border border-[#062b8a]/25 font-mono font-semibold"
+              href="/booking/MVO-DIY-2601"
+              className="px-3 py-1.5 rounded-full bg-white border border-black/15 hover:border-[#FF5500] font-mono font-bold whitespace-nowrap"
             >
-              DLN-DIY-2601
+              MVO-DIY-2601
             </Link>
             <Link
-              href="/booking/DLN-DIY-2602"
-              className="px-3 py-1 rounded-md bg-[#faf7f0] border border-[#062b8a]/25 font-mono font-semibold"
+              href="/booking/MVO-DIY-2602"
+              className="px-3 py-1.5 rounded-full bg-white border border-black/15 hover:border-[#FF5500] font-mono font-bold whitespace-nowrap"
             >
-              DLN-DIY-2602
+              MVO-DIY-2602
             </Link>
           </div>
         </div>
 
         {loading ? (
-          <div className="h-96 rounded-2xl bg-[#faf7f0]/70 animate-pulse" />
+          <div className="h-96 rounded-3xl bg-white animate-pulse border border-black/10" />
         ) : !detail ? (
-          <div className="rounded-2xl bg-[#faf7f0] border-2 border-[#062b8a] p-8 text-center">
-            <h1 className="text-2xl font-semibold mb-2">Voucher {code} tidak ditemukan</h1>
-            <p className="text-sm text-[#3a5aa8]">
-              Pilih voucher sampel di atas atau buat booking baru dari halaman pencarian.
+          <div className="rounded-3xl bg-white border border-black/10 p-8 text-center">
+            <h1 className="text-2xl font-extrabold mb-2">Voucher {code} tidak ditemukan</h1>
+            <p className="text-sm text-[#6B7280]">
+              Pilih voucher sampel di atas atau buat booking baru dari beranda Muvo.
             </p>
           </div>
         ) : (
-          <div className="voucher-ticket rounded-2xl border-2 border-[#062b8a] overflow-hidden">
+          <div className="voucher-ticket rounded-3xl border border-black/10 overflow-hidden shadow-sm">
             {/* Voucher Header */}
-            <div className="p-6 sm:p-8 bg-[#062b8a] text-[#e6dbc7] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-6 sm:p-8 bg-[#0D0D0D] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="text-xs font-mono uppercase tracking-widest opacity-80">
-                  Voucher Booking Resmi Dolan • {detail.province.name}
+                <span className="text-xs font-mono uppercase tracking-widest text-[#FF5500] font-bold">
+                  E-Voucher Resmi Muvo • {detail.province.name}
                 </span>
-                <h1 className="text-3xl font-semibold font-mono tracking-tight mt-1">
+                <h1 className="text-3xl font-extrabold font-mono tracking-tight mt-1">
                   {detail.booking.code}
                 </h1>
-                <p className="text-sm opacity-85 mt-1">
-                  {detail.vehicle.brandModel} ({detail.vehicle.plateMasked}) • {detail.partner.businessName}
+                <p className="text-sm text-white/80 mt-1">
+                  {detail.vehicle.brandModel} ({detail.vehicle.plateMasked}) •{' '}
+                  {detail.partner.businessName}
                 </p>
               </div>
               <div className="text-left sm:text-right">
-                <span className="inline-block px-3 py-1 rounded-full bg-[#e6dbc7] text-[#062b8a] text-xs font-semibold">
+                <span className="inline-block px-3.5 py-1.5 rounded-full bg-[#FF5500] text-white text-xs font-extrabold whitespace-nowrap">
                   STATUS: {detail.booking.status}
                 </span>
-                <p className="text-xs mt-2 opacity-80 font-mono">
+                <p className="text-xs mt-2 text-white/60 font-mono">
                   Kebijakan: {detail.booking.policyVersion}
                 </p>
               </div>
@@ -216,47 +219,49 @@ export default function BookingVoucherPage() {
 
             {actionMsg && (
               <div
-                className={`mx-6 mt-6 p-3.5 rounded-xl text-xs font-semibold border ${
+                className={`mx-6 mt-6 p-3.5 rounded-2xl text-xs font-bold border ${
                   actionMsg.type === 'ok'
-                    ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                    : 'bg-red-50 border-red-300 text-red-900'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                    : 'bg-red-50 border-red-200 text-red-900'
                 }`}
               >
                 {actionMsg.text}
               </div>
             )}
 
-            {/* Trip Timing & Route Snapshot */}
-            <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 border-b-4 border-dotted border-[#ddd0b9]">
+            {/* Trip Timing & Price Snapshot */}
+            <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 voucher-perforated">
               <div className="space-y-3 text-sm">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> Detail Jemput & Durasi
+                <h2 className="text-base font-extrabold flex items-center gap-2 text-[#0D0D0D]">
+                  <Calendar className="w-4 h-4 text-[#FF5500]" /> Detail Jemput & Durasi
                 </h2>
-                <div className="rounded-xl bg-[#e6dbc7]/45 p-4 space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-[#3a5aa8]">Penyewa</span>
-                    <span className="font-semibold">
+                <div className="rounded-2xl bg-[#F7F7F8] border border-black/5 p-4 space-y-2.5 text-xs">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-[#6B7280]">Penyewa</span>
+                    <span className="font-bold text-[#0D0D0D]">
                       {detail.booking.renterName} ({detail.booking.renterPhone})
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#3a5aa8]">Titik Ambil</span>
-                    <span className="font-semibold">{detail.booking.pickupLocationName}</span>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-[#6B7280]">Titik Ambil</span>
+                    <span className="font-bold text-[#0D0D0D]">
+                      {detail.booking.pickupLocationName}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#3a5aa8]">Durasi & Mode</span>
-                    <span className="font-semibold">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-[#6B7280]">Durasi & Mode</span>
+                    <span className="font-bold text-[#0D0D0D]">
                       {detail.booking.durationHours} Jam •{' '}
                       {detail.booking.packageType === 'FULL_BBM_DRIVER'
-                        ? 'Paket Full BBM + Sopir'
+                        ? 'Full BBM + Sopir'
                         : detail.booking.mode === 'DENGAN_SOPIR'
                           ? 'Dengan Sopir'
                           : 'Lepas Kunci'}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#3a5aa8]">Mulai → Selesai</span>
-                    <span className="font-mono font-semibold">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-[#6B7280]">Jadwal</span>
+                    <span className="font-mono font-bold text-[#0D0D0D]">
                       {new Date(detail.booking.startAt).toLocaleString('id-ID', {
                         day: '2-digit',
                         month: 'short',
@@ -272,16 +277,17 @@ export default function BookingVoucherPage() {
                       })}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#3a5aa8]">Rute Antar ({detail.booking.routeQuote.source})</span>
-                    <span className="font-mono">
-                      {detail.booking.routeQuote.distanceKm} km (~{detail.booking.routeQuote.durationMinutes} mnt)
+                  <div className="flex justify-between gap-2">
+                    <span className="text-[#6B7280]">Rute OSRM</span>
+                    <span className="font-mono font-semibold text-[#0D0D0D]">
+                      {detail.booking.routeQuote.distanceKm} km (~
+                      {detail.booking.routeQuote.durationMinutes} mnt)
                     </span>
                   </div>
                   {detail.driver && (
-                    <div className="flex justify-between pt-1 border-t border-[#062b8a]/15">
-                      <span className="text-[#3a5aa8]">Sopir Bertugas</span>
-                      <span className="font-semibold">
+                    <div className="flex justify-between pt-2 border-t border-black/10">
+                      <span className="text-[#6B7280]">Sopir Bertugas</span>
+                      <span className="font-bold text-[#FF5500]">
                         {detail.driver.name} ({detail.driver.phone})
                       </span>
                     </div>
@@ -289,62 +295,64 @@ export default function BookingVoucherPage() {
                 </div>
 
                 {detail.booking.packageSnapshot && (
-                  <div className="rounded-xl border border-[#062b8a]/25 p-4 text-xs space-y-1">
-                    <div className="font-semibold flex items-center gap-1.5">
-                      <Fuel className="w-3.5 h-3.5" /> Batas Paket Full BBM + Sopir (Terkunci)
+                  <div className="rounded-2xl bg-[#FFF2EB] border border-[#FF5500]/25 p-4 text-xs space-y-1">
+                    <div className="font-extrabold text-[#FF5500] flex items-center gap-1.5">
+                      <Fuel className="w-3.5 h-3.5" /> Batas Paket Full BBM + Sopir
                     </div>
-                    <p>Wilayah: {detail.booking.packageSnapshot.wilayah}</p>
-                    <p>Batas Jarak: {detail.booking.packageSnapshot.maxKm} km</p>
-                    <p className="text-[#3a5aa8]">{detail.booking.packageSnapshot.returnFuelRule}</p>
+                    <p className="font-semibold text-[#0D0D0D]">
+                      Wilayah: {detail.booking.packageSnapshot.wilayah}
+                    </p>
+                    <p className="text-[#6B7280]">
+                      Batas Jarak: {detail.booking.packageSnapshot.maxKm} km •{' '}
+                      {detail.booking.packageSnapshot.returnFuelRule}
+                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Price Snapshot & Extend/Cancel Controls */}
               <div className="space-y-3 text-sm">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Snapshot Harga & Aksi Booking
+                <h2 className="text-base font-extrabold flex items-center gap-2 text-[#0D0D0D]">
+                  <Clock className="w-4 h-4 text-[#FF5500]" /> Rincian Tarif & Aksi
                 </h2>
-                <div className="rounded-xl bg-[#e6dbc7]/45 p-4 space-y-2 text-xs">
+                <div className="rounded-2xl bg-[#F7F7F8] border border-black/5 p-4 space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span>Sewa {detail.booking.durationHours} jam</span>
-                    <span className="font-mono font-semibold">
+                    <span className="text-[#6B7280]">Sewa {detail.booking.durationHours} jam</span>
+                    <span className="font-mono font-bold">
                       {formatRp(detail.booking.priceSnapshot.baseRentalFee)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Biaya antar OSRM</span>
-                    <span className="font-mono font-semibold">
+                    <span className="text-[#6B7280]">Ongkos antar OSRM</span>
+                    <span className="font-mono font-bold">
                       {formatRp(detail.booking.priceSnapshot.deliveryFee)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Total sewa</span>
-                    <span className="font-mono font-semibold">
+                    <span className="text-[#6B7280]">Total sewa final</span>
+                    <span className="font-mono font-extrabold text-[#0D0D0D]">
                       {formatRp(detail.booking.priceSnapshot.rentalTotal)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>DP dibayar</span>
-                    <span className="font-mono font-semibold">
+                    <span className="text-[#6B7280]">DP dibayar</span>
+                    <span className="font-mono font-extrabold text-[#FF5500]">
                       {formatRp(detail.booking.priceSnapshot.dpAmount)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Sisa pelunasan saat serah-terima</span>
-                    <span className="font-mono font-semibold">
+                    <span className="text-[#6B7280]">Sisa saat serah-terima</span>
+                    <span className="font-mono font-bold">
                       {formatRp(detail.booking.priceSnapshot.remainingAtHandover)}
                     </span>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-[#062b8a]/15">
-                    <span>Deposit escrow ditahan</span>
-                    <span className="font-mono font-semibold">
+                  <div className="flex justify-between pt-2 border-t border-black/10">
+                    <span className="text-[#6B7280]">Escrow Deposit</span>
+                    <span className="font-mono font-bold">
                       {formatRp(detail.booking.priceSnapshot.depositAmount)}
                     </span>
                   </div>
                 </div>
 
-                {/* Extend & Cancel (FR-REN-07 / FR-REN-13) — 1 Single Line */}
                 {detail.booking.status !== 'CANCELLED' &&
                   detail.booking.status !== 'COMPLETED' && (
                     <div className="flex flex-nowrap items-center gap-2 pt-1 overflow-x-auto no-scrollbar">
@@ -355,88 +363,91 @@ export default function BookingVoucherPage() {
                             key={target}
                             type="button"
                             onClick={() => handleExtend(target)}
-                            className="px-3.5 py-2 rounded-lg bg-[#062b8a] text-[#e6dbc7] text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                            className="px-4 py-2 rounded-full bg-[#0D0D0D] hover:bg-[#FF5500] text-white text-xs font-bold cursor-pointer whitespace-nowrap shrink-0 transition-colors"
                           >
-                            Ajukan Extend ke {target} Jam
+                            Extend ke {target} Jam
                           </button>
                         ))}
                       <button
                         type="button"
                         onClick={handleCancel}
-                        className="px-3.5 py-2 rounded-lg border border-red-700 text-red-700 text-xs font-semibold hover:bg-red-50 cursor-pointer whitespace-nowrap shrink-0"
+                        className="px-4 py-2 rounded-full border border-red-300 text-red-700 text-xs font-bold hover:bg-red-50 cursor-pointer whitespace-nowrap shrink-0"
                       >
-                        Batalkan Booking (Hitung Refund)
+                        Batalkan Booking
                       </button>
                     </div>
                   )}
 
                 {detail.booking.gpsConsentAccepted && (
-                  <p className="text-[11px] text-[#3a5aa8] flex items-center gap-1.5">
-                    <Navigation className="w-3.5 h-3.5" />
-                    Persetujuan GPS Traccar tercatat — pelacakan aktif selama masa sewa saja.
+                  <p className="text-[11px] text-[#6B7280] flex items-center gap-1.5">
+                    <Navigation className="w-3.5 h-3.5 text-[#FF5500]" />
+                    Persetujuan GPS keamanan tercatat aktif selama masa sewa.
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Joint Handover Checklist (FR-REN-08 & FR-MIT-06) */}
-            <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Joint Handover Checklist */}
+            <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white">
               <div className="lg:col-span-6 space-y-3">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Camera className="w-4 h-4" /> Riwayat Checklist Serah-Terima
+                <h2 className="text-base font-extrabold flex items-center gap-2 text-[#0D0D0D]">
+                  <Camera className="w-4 h-4 text-[#FF5500]" /> Riwayat Checklist Serah-Terima
                 </h2>
                 {detail.booking.checklists.length === 0 ? (
-                  <p className="text-xs text-[#3a5aa8]">
+                  <p className="text-xs text-[#6B7280]">
                     Belum ada checklist yang dicatat untuk booking ini.
                   </p>
                 ) : (
                   detail.booking.checklists.map((chk) => (
                     <div
                       key={chk.id}
-                      className="rounded-xl border border-[#062b8a]/25 bg-white p-4 text-xs space-y-1.5"
+                      className="rounded-2xl border border-black/10 bg-[#F7F7F8] p-4 text-xs space-y-1.5"
                     >
-                      <div className="flex items-center justify-between font-semibold">
-                        <span>Tahap: {chk.stage === 'PICKUP' ? 'SERAH UNIT' : 'PENGEMBALIAN'}</span>
+                      <div className="flex items-center justify-between font-bold">
+                        <span>{chk.stage === 'PICKUP' ? 'SERAH UNIT' : 'PENGEMBALIAN'}</span>
                         <span className="inline-flex items-center gap-1 text-emerald-700">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          {chk.locked ? 'Terkunci Permanen (2 Pihak)' : 'Menunggu Pihak Kedua'}
+                          {chk.locked ? 'Terkunci (2 Pihak)' : 'Menunggu Konfirmasi'}
                         </span>
                       </div>
-                      <p className="font-mono">
+                      <p className="font-mono text-[#0D0D0D]">
                         Odometer: <strong>{chk.odometerKm.toLocaleString('id-ID')} km</strong> •
-                        Indikator BBM: <strong>{chk.fuelLevelPct}%</strong> • Foto: {chk.photosCount} berkas
+                        BBM: <strong>{chk.fuelLevelPct}%</strong> • Foto: {chk.photosCount}
                       </p>
-                      <p className="text-[#3a5aa8]">{chk.notes}</p>
-                      <p className="text-[11px] text-[#3a5aa8] font-mono">
-                        Watermark server: {new Date(chk.watermarkTimestamp).toLocaleString('id-ID')}
+                      <p className="text-[#6B7280]">{chk.notes}</p>
+                      <p className="text-[11px] text-[#6B7280] font-mono">
+                        Watermark: {new Date(chk.watermarkTimestamp).toLocaleString('id-ID')}
                       </p>
                     </div>
                   ))
                 )}
               </div>
 
-              <form onSubmit={handleChecklist} className="lg:col-span-6 rounded-xl bg-[#e6dbc7]/45 p-5 space-y-3">
-                <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4" /> Konfirmasi Checklist Bersama (HP Penyewa / Mitra)
+              <form
+                onSubmit={handleChecklist}
+                className="lg:col-span-6 rounded-2xl bg-[#F7F7F8] border border-black/10 p-5 space-y-3"
+              >
+                <h3 className="text-sm font-extrabold flex items-center gap-1.5 text-[#0D0D0D]">
+                  <ShieldAlert className="w-4 h-4 text-[#FF5500]" /> Konfirmasi Checklist Bersama
                 </h3>
                 <div className="grid grid-cols-2 gap-2.5 text-xs">
                   <div>
-                    <label className="block font-semibold mb-1">Tahap</label>
+                    <label className="block font-bold mb-1">Tahap</label>
                     <select
                       value={stage}
                       onChange={(e) => setStage(e.target.value as 'PICKUP' | 'RETURN')}
-                      className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#062b8a]/25"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-black/10 font-semibold"
                     >
                       <option value="PICKUP">Serah Unit (Pickup)</option>
                       <option value="RETURN">Pengembalian (Return)</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block font-semibold mb-1">Konfirmasi Sebagai</label>
+                    <label className="block font-bold mb-1">Konfirmasi Sebagai</label>
                     <select
                       value={actor}
                       onChange={(e) => setActor(e.target.value as 'RENTER' | 'PARTNER')}
-                      className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#062b8a]/25"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-black/10 font-semibold"
                     >
                       <option value="RENTER">Penyewa (Renter)</option>
                       <option value="PARTNER">Mitra / Sopir</option>
@@ -445,37 +456,37 @@ export default function BookingVoucherPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 text-xs">
                   <div>
-                    <label className="block font-semibold mb-1">Odometer (km)</label>
+                    <label className="block font-bold mb-1">Odometer (km)</label>
                     <input
                       type="number"
                       value={odometerKm}
                       onChange={(e) => setOdometerKm(Number(e.target.value))}
-                      className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#062b8a]/25 font-mono"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-black/10 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold mb-1">Indikator BBM (%)</label>
+                    <label className="block font-bold mb-1">Indikator BBM (%)</label>
                     <input
                       type="number"
                       min={0}
                       max={100}
                       value={fuelPct}
                       onChange={(e) => setFuelPct(Number(e.target.value))}
-                      className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#062b8a]/25 font-mono"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-black/10 font-mono"
                     />
                   </div>
                 </div>
                 <div className="text-xs">
-                  <label className="block font-semibold mb-1">Catatan Kondisi & Kelengkapan</label>
+                  <label className="block font-bold mb-1">Catatan Kondisi Unit</label>
                   <input
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#062b8a]/25"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-black/10"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-lg bg-[#062b8a] text-[#e6dbc7] text-xs font-semibold cursor-pointer"
+                  className="w-full py-2.5 rounded-full bg-[#0D0D0D] hover:bg-[#FF5500] text-white text-xs font-extrabold cursor-pointer transition-colors"
                 >
                   Simpan & Konfirmasi Checklist
                 </button>

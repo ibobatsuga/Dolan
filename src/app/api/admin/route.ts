@@ -53,7 +53,7 @@ export async function PATCH(req: NextRequest) {
     const dispute = resolveDisputeTicket({
       disputeId: body.disputeId,
       approvedAmount: body.approvedAmount ?? 0,
-      decisionNote: body.decisionNote || 'Diselesaikan oleh Admin Ops Dolan.',
+      decisionNote: body.decisionNote || 'Diselesaikan oleh Admin Ops Muvo.',
       depositAction: body.depositAction || 'RELEASE_FULL',
     });
     if (!dispute) {

@@ -150,7 +150,7 @@ export default function AdminOpsPage() {
         <div className="bg-white border border-[#e2e0dc] rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-xs font-medium text-[#5b616e]">
-              Panel Operasional Dolan • Kontrol Multi-Provinsi, Verifikasi OCR, GPS Traccar & Escrow
+              Panel Operasional Muvo • Kontrol Multi-Provinsi, Verifikasi OCR, GPS Traccar & Escrow
             </span>
             <h1 className="text-2xl font-semibold mt-0.5">Admin & Kendali Platform</h1>
           </div>

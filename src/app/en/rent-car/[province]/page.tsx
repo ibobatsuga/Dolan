@@ -14,10 +14,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { province: slug } = await params;
   const province = getProvinceBySlug(slug);
-  if (!province) return { title: 'Dolan — Region Not Found' };
+  if (!province) return { title: 'Muvo — Region Not Found' };
 
   return {
-    title: `${province.seoHeadlineEn} | Dolan`,
+    title: `${province.seoHeadlineEn} | Muvo`,
     description: `Book verified car rentals in ${province.name} (${province.popularCorridors.join(', ')}) with fixed final pricing, 6/12/24h flexible pickup times, and English-friendly drivers.`,
   };
 }

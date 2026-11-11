@@ -50,7 +50,7 @@ import {
   VehicleListing,
 } from './types';
 
-export interface DolanStoreState {
+export interface MuvoStoreState {
   provinces: Province[];
   partners: PartnerProfile[];
   drivers: DriverProfile[];
@@ -66,7 +66,7 @@ export interface DolanStoreState {
   notifications: NotificationLog[];
 }
 
-function cloneSeed(): DolanStoreState {
+function cloneSeed(): MuvoStoreState {
   return structuredClone({
     provinces: PROVINCES,
     partners: SEED_PARTNERS,
@@ -84,15 +84,15 @@ function cloneSeed(): DolanStoreState {
   });
 }
 
-const globalForDolan = globalThis as unknown as {
-  __dolanStore?: DolanStoreState;
+const globalForMuvo = globalThis as unknown as {
+  __muvoStore?: MuvoStoreState;
 };
 
-export function getStore(): DolanStoreState {
-  if (!globalForDolan.__dolanStore) {
-    globalForDolan.__dolanStore = cloneSeed();
+export function getStore(): MuvoStoreState {
+  if (!globalForMuvo.__muvoStore) {
+    globalForMuvo.__muvoStore = cloneSeed();
   }
-  return globalForDolan.__dolanStore;
+  return globalForMuvo.__muvoStore;
 }
 
 export function getProvinceConfig(provinceId: string): PlatformRegionConfig {
@@ -323,7 +323,7 @@ export async function createMarketplaceBooking(input: {
   }
 
   const bookingId = `bkg-${Date.now()}`;
-  const code = `DLN-${province.code}-${String(Math.floor(1000 + Math.random() * 8999))}`;
+  const code = `MVO-${province.code}-${String(Math.floor(1000 + Math.random() * 8999))}`;
   const deadline = new Date(
     Date.now() + province.config.partnerResponseSlaMinutes * 60 * 1000
   ).toISOString();

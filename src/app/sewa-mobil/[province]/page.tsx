@@ -15,10 +15,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { province: slug } = await params;
   const province = getProvinceBySlug(slug);
-  if (!province) return { title: 'Dolan — Wilayah Tidak Ditemukan' };
+  if (!province) return { title: 'Muvo — Wilayah Tidak Ditemukan' };
 
   return {
-    title: `${province.seoHeadlineId} | Dolan`,
+    title: `${province.seoHeadlineId} | Muvo`,
     description: `Sewa mobil di ${province.name} (${province.popularCorridors.join(', ')}) dengan harga final transparan 6/12/24 jam, lepas kunci atau dengan sopir + full BBM.`,
   };
 }

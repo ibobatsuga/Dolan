@@ -2,151 +2,278 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Globe, MapPin, ShieldCheck, Car, Calendar, Users } from 'lucide-react';
+import {
+  Bell,
+  Calendar,
+  CarFront,
+  GitCompareArrows,
+  Globe2,
+  Heart,
+  Home,
+  MapPin,
+  Search,
+  User,
+} from 'lucide-react';
+import { UserTab } from '@/components/user/types';
 
 interface NavbarProps {
-  lang?: 'id' | 'en';
-  onLangChange?: (lang: 'id' | 'en') => void;
+  theme?: 'sand' | 'ledger' | 'user';
   activeProvinceSlug?: string;
-  onProvinceChange?: (slug: string) => void;
-  theme?: 'sand' | 'ledger';
+  onSelectProvince?: (slug: string) => void;
+  lang?: 'id' | 'en';
+  onToggleLang?: () => void;
+  activeTab?: UserTab;
+  onSelectTab?: (tab: UserTab) => void;
+  wishlistCount?: number;
+  compareCount?: number;
+  notifCount?: number;
+  userName?: string;
+  loggedIn?: boolean;
+  onOpenAuth?: () => void;
+  onOpenCompare?: () => void;
 }
 
 export function Navbar({
-  lang = 'id',
-  onLangChange,
   activeProvinceSlug = 'jogja',
-  onProvinceChange,
-  theme = 'sand',
+  onSelectProvince,
+  lang = 'id',
+  onToggleLang,
+  activeTab = 'home',
+  onSelectTab,
+  wishlistCount = 0,
+  compareCount = 0,
+  notifCount = 2,
+  userName = 'Masuk',
+  loggedIn = false,
+  onOpenAuth,
+  onOpenCompare,
 }: NavbarProps) {
   const pathname = usePathname();
-  const isLedger = theme === 'ledger';
+  const isHomeRoute =
+    pathname === '/' ||
+    pathname.startsWith('/sewa-mobil') ||
+    pathname.startsWith('/en/rent-car');
 
-  const navLinks = [
-    { href: '/', label: lang === 'en' ? 'Find Cars' : 'Cari Mobil', icon: Car },
-    { href: '/booking/DLN-DIY-2601', label: lang === 'en' ? 'My Voucher' : 'Voucher Saya', icon: Calendar },
-    { href: '/mitra', label: lang === 'en' ? 'Partner SaaS' : 'SaaS Mitra', icon: Users },
-    { href: '/sopir', label: lang === 'en' ? 'Driver' : 'Sopir', icon: MapPin },
-    { href: '/admin', label: 'Admin Ops', icon: ShieldCheck },
+  const navItems: Array<{
+    tab: UserTab;
+    href: string;
+    label: string;
+    icon: typeof Home;
+    badge?: number;
+  }> = [
+    { tab: 'home', href: '/', label: lang === 'en' ? 'Home' : 'Beranda', icon: Home },
+    { tab: 'search', href: '/#cari', label: lang === 'en' ? 'Search' : 'Cari Mobil', icon: Search },
+    {
+      tab: 'wishlist',
+      href: '/#wishlist',
+      label: 'Wishlist',
+      icon: Heart,
+      badge: wishlistCount > 0 ? wishlistCount : undefined,
+    },
+    {
+      tab: 'bookings',
+      href: '/booking/MVO-DIY-2601',
+      label: lang === 'en' ? 'Bookings' : 'Booking',
+      icon: Calendar,
+    },
+    { tab: 'profile', href: '/#profil', label: lang === 'en' ? 'Profile' : 'Profil', icon: User },
   ];
 
+  const handleTabClick = (item: (typeof navItems)[number], e: React.MouseEvent) => {
+    if (isHomeRoute && onSelectTab) {
+      e.preventDefault();
+      onSelectTab(item.tab);
+    }
+  };
+
   return (
-    <header
-      className={`sticky top-0 z-40 border-b ${
-        isLedger
-          ? 'bg-[#ffffff] border-[#e2e0dc] text-[#14171f]'
-          : 'bg-[#e6dbc7]/95 backdrop-blur-sm border-[#062b8a]/15 text-[#062b8a]'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex flex-nowrap items-center justify-between gap-3 overflow-x-auto no-scrollbar">
-        <div className="flex flex-nowrap items-center gap-3 shrink-0">
-          <Link href="/" className="flex items-center gap-2.5 group shrink-0 whitespace-nowrap">
-            <svg
-              width="34"
-              height="34"
-              viewBox="0 0 34 34"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
+    <>
+      <header className="sticky top-0 z-40 border-b border-black/10 bg-white/95 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2.5 flex-nowrap">
+          {/* Left: Brand + Province selector (single line) */}
+          <div className="flex items-center gap-2.5 shrink-0 flex-nowrap min-w-0">
+            <Link
+              href="/"
+              onClick={(e) => {
+                if (isHomeRoute && onSelectTab) {
+                  e.preventDefault();
+                  onSelectTab('home');
+                }
+              }}
+              className="flex items-center gap-2 group shrink-0 whitespace-nowrap"
             >
-              <rect
-                width="34"
-                height="34"
-                rx="8"
-                fill={isLedger ? '#14171f' : '#062b8a'}
-              />
-              <path
-                d="M9 11H16.5C21.2 11 24.5 13.7 24.5 17C24.5 20.3 21.2 23 16.5 23H9V11Z"
-                stroke={isLedger ? '#ffffff' : '#e6dbc7'}
-                strokeWidth="2.4"
-              />
-              <circle
-                cx="15.5"
-                cy="17"
-                r="2.2"
-                fill={isLedger ? '#1d5fbf' : '#e6dbc7'}
-              />
-            </svg>
-            <div className="leading-none whitespace-nowrap">
-              <span className="text-xl font-semibold tracking-tight block">Dolan</span>
-              <span
-                className={`text-[11px] font-medium tracking-wide ${
-                  isLedger ? 'text-[#5b616e]' : 'text-[#3a5aa8]'
-                }`}
-              >
-                {activeProvinceSlug === 'jogja'
-                  ? 'DIY • Jogja Pilot'
-                  : `${activeProvinceSlug.toUpperCase()} • Ekspansi`}
+              <span className="w-9 h-9 rounded-xl bg-[#0D0D0D] text-white flex items-center justify-center shrink-0 relative overflow-hidden">
+                <CarFront className="w-5 h-5" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#FF5500]" />
               </span>
-            </div>
-          </Link>
+              <span className="leading-none whitespace-nowrap">
+                <span className="text-xl font-extrabold tracking-tight text-[#0D0D0D] block">
+                  Muvo
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.16em] text-[#FF5500] font-bold hidden xl:block whitespace-nowrap">
+                  Car Rental User
+                </span>
+              </span>
+            </Link>
 
-          {onProvinceChange && (
-            <div className="hidden lg:flex flex-nowrap items-center gap-1.5 pl-3 border-l border-current/15 shrink-0">
-              <MapPin className="w-3.5 h-3.5 opacity-70 shrink-0" />
-              <select
-                aria-label="Pilih Provinsi"
-                value={activeProvinceSlug}
-                onChange={(e) => onProvinceChange(e.target.value)}
-                className={`text-xs font-medium rounded-md px-2 py-1 border cursor-pointer focus:outline-none whitespace-nowrap shrink-0 ${
-                  isLedger
-                    ? 'bg-[#f4f3f1] border-[#d8d5cf] text-[#14171f]'
-                    : 'bg-[#faf7f0] border-[#062b8a]/20 text-[#062b8a]'
+            {onSelectProvince ? (
+              <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-black/15 bg-[#F7F7F8] px-3 py-1.5 text-xs shrink-0 whitespace-nowrap">
+                <MapPin className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                <select
+                  aria-label="Pilih Provinsi"
+                  value={activeProvinceSlug}
+                  onChange={(e) => onSelectProvince(e.target.value)}
+                  className="bg-transparent font-semibold text-[#0D0D0D] focus:outline-none cursor-pointer whitespace-nowrap"
+                >
+                  <option value="jogja">DI Yogyakarta (Aktif)</option>
+                  <option value="jawa-tengah">Jawa Tengah (V2)</option>
+                  <option value="jawa-timur">Jawa Timur (V2)</option>
+                  <option value="bali">Bali (V2)</option>
+                </select>
+              </div>
+            ) : (
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-[#FFF2EB] text-[#FF5500] px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shrink-0">
+                <MapPin className="w-3 h-3" /> Jogja (DIY)
+              </span>
+            )}
+          </div>
+
+          {/* Center: 1-line User Tabs (desktop) */}
+          <nav className="hidden md:flex items-center gap-1 bg-[#F7F7F8] p-1 rounded-full border border-black/10 overflow-x-auto no-scrollbar flex-nowrap">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = isHomeRoute
+                ? activeTab === item.tab
+                : item.tab === 'bookings' && pathname.startsWith('/booking');
+              return (
+                <Link
+                  key={item.tab}
+                  href={item.href}
+                  onClick={(e) => handleTabClick(item, e)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                    isActive
+                      ? 'bg-[#0D0D0D] text-white'
+                      : 'text-[#0D0D0D]/75 hover:text-[#0D0D0D] hover:bg-white'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#FF5500]' : ''}`} />
+                  <span className="whitespace-nowrap">{item.label}</span>
+                  {item.badge !== undefined && (
+                    <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-[#FF5500] text-white text-[10px] font-bold tabular-nums">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right: Compare, Notifications, Language, Auth Pill */}
+          <div className="flex items-center gap-2 shrink-0 flex-nowrap">
+            {onOpenCompare && (
+              <button
+                type="button"
+                onClick={onOpenCompare}
+                className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  compareCount > 0
+                    ? 'border-[#FF5500] bg-[#FFF2EB] text-[#FF5500]'
+                    : 'border-black/15 bg-white text-[#0D0D0D] hover:bg-[#F7F7F8]'
                 }`}
               >
-                <option value="jogja">DI Yogyakarta (Aktif)</option>
-                <option value="jawa-tengah">Jawa Tengah (Siap Ekspansi)</option>
-                <option value="jawa-timur">Jawa Timur (Infrastruktur Siap)</option>
-                <option value="bali">Bali (Infrastruktur Siap)</option>
-              </select>
-            </div>
-          )}
+                <GitCompareArrows className="w-3.5 h-3.5 shrink-0" />
+                <span>{lang === 'en' ? 'Compare' : 'Bandingkan'}</span>
+                {compareCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-[#FF5500] text-white text-[10px] leading-none font-bold tabular-nums">
+                    {compareCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {isHomeRoute && onSelectTab && (
+              <button
+                type="button"
+                onClick={() => onSelectTab('profile')}
+                aria-label="Notifikasi"
+                className="relative w-9 h-9 rounded-full border border-black/15 bg-white hover:bg-[#F7F7F8] flex items-center justify-center shrink-0 cursor-pointer"
+              >
+                <Bell className="w-4 h-4 text-[#0D0D0D]" />
+                {notifCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#FF5500] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
+                    {notifCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {onToggleLang && (
+              <button
+                type="button"
+                onClick={onToggleLang}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-black/15 bg-white hover:bg-[#F7F7F8] text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <Globe2 className="w-3.5 h-3.5 text-[#FF5500]" />
+                <span>{lang === 'id' ? 'ID' : 'EN'}</span>
+              </button>
+            )}
+
+            {onOpenAuth && (
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  loggedIn
+                    ? 'bg-[#F7F7F8] border border-black/15 text-[#0D0D0D] hover:border-[#FF5500]'
+                    : 'bg-[#0D0D0D] text-white hover:bg-[#FF5500]'
+                }`}
+              >
+                <User className="w-3.5 h-3.5 shrink-0" />
+                <span className="max-w-[90px] truncate">
+                  {loggedIn ? userName.split(' ')[0] : lang === 'en' ? 'Sign In' : 'Masuk'}
+                </span>
+              </button>
+            )}
+          </div>
         </div>
+      </header>
 
-        <nav className="flex flex-nowrap items-center gap-1 shrink-0">
-          {navLinks.map((item) => {
-            const Icon = item.icon;
-            const active =
-              item.href === '/'
-                ? pathname === '/'
-                : pathname?.startsWith(item.href.split('/').slice(0, 2).join('/'));
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
-                  active
-                    ? isLedger
-                      ? 'bg-[#14171f] text-white'
-                      : 'bg-[#062b8a] text-[#e6dbc7]'
-                    : isLedger
-                      ? 'text-[#4b505b] hover:bg-[#f4f3f1]'
-                      : 'text-[#062b8a] hover:bg-[#ddd0b9]'
+      {/* Mobile Bottom 5-Tab Bar matching Reference Screenshots */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-black/10 px-2 py-1.5 flex items-center justify-around">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = isHomeRoute
+            ? activeTab === item.tab
+            : item.tab === 'bookings' && pathname.startsWith('/booking');
+          return (
+            <Link
+              key={item.tab}
+              href={item.href}
+              onClick={(e) => handleTabClick(item, e)}
+              className="relative flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 rounded-xl min-w-[58px] whitespace-nowrap"
+            >
+              <div className="relative">
+                <Icon
+                  className={`w-5 h-5 transition-colors ${
+                    isActive ? 'text-[#FF5500]' : 'text-[#0D0D0D]/60'
+                  }`}
+                />
+                {item.badge !== undefined && (
+                  <span className="absolute -top-1.5 -right-2 px-1 min-w-[14px] h-3.5 rounded-full bg-[#FF5500] text-white text-[9px] font-bold flex items-center justify-center tabular-nums">
+                    {item.badge}
+                  </span>
+                )}
+              </div>
+              <span
+                className={`text-[10px] font-semibold whitespace-nowrap ${
+                  isActive ? 'text-[#FF5500]' : 'text-[#0D0D0D]/65'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5 shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {onLangChange && (
-          <button
-            type="button"
-            onClick={() => onLangChange(lang === 'id' ? 'en' : 'id')}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-              isLedger
-                ? 'border-[#d8d5cf] hover:bg-[#f4f3f1]'
-                : 'border-[#062b8a]/25 bg-[#faf7f0] hover:bg-[#ddd0b9]'
-            }`}
-          >
-            <Globe className="w-3.5 h-3.5 shrink-0" />
-            <span>{lang === 'id' ? 'ID / EN' : 'EN / ID'}</span>
-          </button>
-        )}
-      </div>
-    </header>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }

@@ -13,7 +13,8 @@ export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ code: string }> }
 ) {
-  const { code } = await context.params;
+  const { code: rawCode } = await context.params;
+  const code = rawCode.replace(/^DLN-/i, 'MVO-');
   const store = getStore();
   const booking = store.bookings.find((b) => b.code === code);
   if (!booking) {
@@ -34,7 +35,8 @@ export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ code: string }> }
 ) {
-  const { code } = await context.params;
+  const { code: rawCode } = await context.params;
+  const code = rawCode.replace(/^DLN-/i, 'MVO-');
   const body = (await req.json()) as {
     action: 'EXTEND' | 'CANCEL' | 'PARTNER_RESPOND' | 'ASSIGN_DRIVER' | 'CHECKLIST';
     targetDuration?: DurationHours;
